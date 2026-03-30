@@ -36,19 +36,27 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   loadToday: async () => {
     const today = dayjs().format("YYYY-MM-DD");
     set({ selectedDate: today, loading: true });
-    const day = await ipc.getOrCreateToday();
-    const messages = await ipc.getMessages(day.id);
-    set({ currentDay: day, messages, loading: false });
-
-    // Also load the diary list for current month
-    get().loadDiaryList(dayjs().year(), dayjs().month() + 1);
+    try {
+      const day = await ipc.getOrCreateToday();
+      const messages = await ipc.getMessages(day.id);
+      set({ currentDay: day, messages, loading: false });
+      // Also load the diary list for current month
+      get().loadDiaryList(dayjs().year(), dayjs().month() + 1);
+    } catch {
+      set({ currentDay: null, messages: [], loading: false });
+    }
   },
 
   loadDay: async (date: string) => {
     set({ loading: true });
-    const day = await ipc.getDiaryDay(date);
-    const messages = await ipc.getMessages(day.id);
-    set({ currentDay: day, messages, loading: false });
+    try {
+      const day = await ipc.getDiaryDay(date);
+      const messages = await ipc.getMessages(day.id);
+      set({ currentDay: day, messages, loading: false });
+    } catch {
+      // Date has no diary entry yet — show empty state
+      set({ currentDay: null, messages: [], loading: false });
+    }
   },
 
   loadDiaryList: async (year: number, month: number) => {
