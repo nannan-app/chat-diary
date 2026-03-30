@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { Camera, SmilePlus, Bot, Tag, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -175,35 +176,35 @@ export default function MessageInput() {
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
           title="插入图片"
         >
-          📷
+          <Camera className="w-4 h-4" />
         </button>
         <button
           onClick={() => setShowMoodPanel(!showMoodPanel)}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
           title="心情"
         >
-          😊
+          <SmilePlus className="w-4 h-4" />
         </button>
         <button
           onClick={handleAiSummarize}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
           title="AI 总结与反馈"
         >
-          🤖
+          <Bot className="w-4 h-4" />
         </button>
         <button
           onClick={() => { setShowTagPanel(!showTagPanel); setShowMoodPanel(false); }}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
           title="标签"
         >
-          🏷️
+          <Tag className="w-4 h-4" />
         </button>
         <button
           onClick={() => setShowEditor(true)}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
           title="长文"
         >
-          📝
+          <PenLine className="w-4 h-4" />
         </button>
 
         <div className="flex-1" />

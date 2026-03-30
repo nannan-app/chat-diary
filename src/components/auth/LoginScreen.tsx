@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { BookHeart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "../../stores/authStore";
 import { getPasswordHint, resetPasswordWithRecovery } from "../../lib/ipc";
@@ -46,7 +47,7 @@ export default function LoginScreen() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="w-20 h-20 rounded-2xl bg-accent/20 flex items-center justify-center text-4xl"
         >
-          📖
+          <BookHeart className="w-10 h-10" />
         </motion.div>
 
         {/* App name */}

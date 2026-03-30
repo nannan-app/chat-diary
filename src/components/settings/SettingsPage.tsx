@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import * as ipc from "../../lib/ipc";
 import { useAuthStore } from "../../stores/authStore";
@@ -33,13 +34,13 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  const sections: { id: Section; label: string; icon: string }[] = [
-    { id: "account", label: "账户与安全", icon: "🔐" },
-    { id: "ai", label: "AI 设置", icon: "🤖" },
-    { id: "writing", label: "写作偏好", icon: "✏️" },
-    { id: "display", label: "显示", icon: "🎨" },
-    { id: "data", label: "数据管理", icon: "💾" },
-    { id: "about", label: "关于", icon: "ℹ️" },
+  const sections: { id: Section; label: string; icon: React.FC<any> }[] = [
+    { id: "account", label: "账户与安全", icon: ShieldCheck },
+    { id: "ai", label: "AI 设置", icon: Bot },
+    { id: "writing", label: "写作偏好", icon: PenLine },
+    { id: "display", label: "显示", icon: Palette },
+    { id: "data", label: "数据管理", icon: Database },
+    { id: "about", label: "关于", icon: Info },
   ];
 
   return (
@@ -70,7 +71,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                               : "text-text-primary hover:bg-warm-100"
                           }`}
             >
-              <span>{s.icon}</span>
+              <s.icon className="w-4 h-4" />
               {s.label}
             </button>
           ))}
@@ -80,7 +81,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-400
                        hover:bg-red-50 transition-colors"
           >
-            🚪 锁定并退出
+            <LogOut className="w-4 h-4 inline mr-1" /> 锁定并退出
           </button>
         </div>
 

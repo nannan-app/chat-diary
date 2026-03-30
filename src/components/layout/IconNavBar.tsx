@@ -1,16 +1,17 @@
 import { motion } from "framer-motion";
+import { CalendarDays, Images, BookOpen, Star, Medal, Dices, Settings, Lock, LockOpen } from "lucide-react";
 import { useUIStore } from "../../stores/uiStore";
 import { useAuthStore } from "../../stores/authStore";
 import { useDiaryStore } from "../../stores/diaryStore";
 import * as ipc from "../../lib/ipc";
 import type { NavSection } from "../../lib/types";
 
-const navItems: { id: NavSection; icon: string; label: string }[] = [
-  { id: "diary", icon: "📅", label: "日记" },
-  { id: "gallery", icon: "🖼️", label: "相册" },
-  { id: "library", icon: "📚", label: "文库" },
-  { id: "favorites", icon: "⭐", label: "收藏" },
-  { id: "achievements", icon: "🏅", label: "勋章" },
+const navItems: { id: NavSection; icon: React.FC<any>; label: string }[] = [
+  { id: "diary", icon: CalendarDays, label: "日记" },
+  { id: "gallery", icon: Images, label: "相册" },
+  { id: "library", icon: BookOpen, label: "文库" },
+  { id: "favorites", icon: Star, label: "收藏" },
+  { id: "achievements", icon: Medal, label: "勋章" },
 ];
 
 export default function IconNavBar() {
@@ -45,7 +46,7 @@ export default function IconNavBar() {
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
-            <span className="relative z-10">{item.icon}</span>
+            <item.icon className="relative z-10 w-5 h-5" />
           </button>
         ))}
 
@@ -68,7 +69,7 @@ export default function IconNavBar() {
             }
           }}
         >
-          🎲
+          <Dices className="w-5 h-5" />
         </button>
       </div>
 
@@ -80,7 +81,7 @@ export default function IconNavBar() {
                      text-xs hover:bg-warm-200/50 transition-colors mb-1"
           title={spaceType === "private" ? "切换到公开空间" : "切换到私密空间"}
         >
-          {spaceType === "private" ? "🔒" : "🔓"}
+          {spaceType === "private" ? <Lock className="w-4 h-4" /> : <LockOpen className="w-4 h-4" />}
         </button>
       )}
 
@@ -91,7 +92,7 @@ export default function IconNavBar() {
                    text-lg hover:bg-warm-200/50 transition-colors"
         title="设置"
       >
-        ⚙️
+        <Settings className="w-5 h-5" />
       </button>
     </div>
   );

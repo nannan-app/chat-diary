@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { FileText, MessageCircle, Star as StarIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import * as ipc from "../../lib/ipc";
@@ -31,7 +32,7 @@ export default function FavoritesView() {
     return (
       <div className="h-full flex items-center justify-center text-text-hint">
         <div className="text-center">
-          <p className="text-4xl mb-3">⭐</p>
+          <StarIcon className="w-10 h-10 mb-3" />
           <p>收藏你珍视的每一段文字</p>
         </div>
       </div>
@@ -51,9 +52,7 @@ export default function FavoritesView() {
               ${selected?.id === fav.id ? "bg-accent/10" : "hover:bg-warm-100"}`}
           >
             <div className="flex items-center gap-1.5">
-              <span className="text-xs">
-                {fav.article_id ? "📝" : "💬"}
-              </span>
+              {fav.article_id ? <FileText className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
               <span className="text-xs text-text-hint">
                 {dayjs(fav.source_date).format("M月D日")}
               </span>

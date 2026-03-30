@@ -1,3 +1,4 @@
+import { FileText, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import type { SearchResult } from "../../lib/types";
@@ -40,9 +41,7 @@ export default function SearchResults({ results, query, onClose }: Props) {
           className="w-full text-left px-3 py-2 rounded-lg mb-0.5 hover:bg-warm-100 transition-colors"
         >
           <div className="flex items-center gap-1.5">
-            <span className="text-xs">
-              {result.kind === "article" ? "📝" : "💬"}
-            </span>
+            {result.kind === "article" ? <FileText className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
             <span className="text-xs text-text-hint">
               {dayjs(result.diary_date).format("M月D日")}
             </span>

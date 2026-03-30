@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Quote, Pencil, Star, Tag as TagIcon, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore } from "../../stores/uiStore";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -74,10 +75,10 @@ export default function ContextMenu() {
   };
 
   const items = [
-    { label: "引用", icon: "💬", action: handleQuote },
-    { label: "编辑", icon: "✏️", action: handleEdit },
+    { label: "引用", icon: Quote, action: handleQuote },
+    { label: "编辑", icon: Pencil, action: handleEdit },
     {
-      label: "收藏", icon: "⭐", action: async () => {
+      label: "收藏", icon: Star, action: async () => {
         if (message) {
           const currentDay = useDiaryStore.getState().currentDay;
           await ipc.addFavorite({
@@ -89,8 +90,8 @@ export default function ContextMenu() {
         hideContextMenu();
       }
     },
-    { label: "标签", icon: "🏷️", action: handleTagClick },
-    { label: "删除", icon: "🗑️", action: handleDelete, danger: true },
+    { label: "标签", icon: TagIcon, action: handleTagClick },
+    { label: "删除", icon: Trash2, action: handleDelete, danger: true },
   ];
 
   return (
@@ -114,7 +115,7 @@ export default function ContextMenu() {
                             hover:bg-warm-100 transition-colors
                             ${item.danger ? "text-red-400" : "text-text-primary"}`}
               >
-                <span className="text-xs">{item.icon}</span>
+                <item.icon className="w-4 h-4" />
                 {item.label}
               </button>
             ))

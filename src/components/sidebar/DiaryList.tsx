@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -59,7 +60,7 @@ export default function DiaryList() {
                        transition-colors text-sm"
             title="日历"
           >
-            📅
+            <Calendar className="w-4 h-4" />
           </button>
         </div>
         <CalendarPopover

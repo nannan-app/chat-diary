@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { ImageOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as ipc from "../../lib/ipc";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -57,7 +58,7 @@ export default function GalleryView() {
     return (
       <div className="h-full flex items-center justify-center text-text-hint">
         <div className="text-center">
-          <p className="text-4xl mb-3">🖼️</p>
+          <ImageOff className="w-10 h-10 mb-3" />
           <p>还没有图片呢，记录生活的美好瞬间吧</p>
         </div>
       </div>

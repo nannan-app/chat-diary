@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BookHeart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -60,8 +61,8 @@ export default function SetupScreen() {
       >
         {step === "welcome" && (
           <>
-            <div className="w-24 h-24 rounded-2xl bg-accent/20 flex items-center justify-center text-5xl">
-              📖
+            <div className="w-24 h-24 rounded-2xl bg-accent/20 flex items-center justify-center">
+              <BookHeart className="w-10 h-10" />
             </div>
             <h1 className="text-2xl font-light text-text-primary">
               欢迎使用喃喃
