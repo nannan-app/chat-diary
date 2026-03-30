@@ -1,0 +1,137 @@
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+
+const resources = {
+  zh: {
+    translation: {
+      // App
+      "app.name": "喃喃",
+      "app.loading": "加载中...",
+      // Auth
+      "auth.password.placeholder": "输入密码",
+      "auth.enter": "进入",
+      "auth.hint": "密码提示",
+      "auth.forgot": "忘记密码",
+      "auth.setup.title": "欢迎使用喃喃",
+      "auth.setup.subtitle": "一个属于你的私密日记本。\n用聊天的方式，记录每一天。",
+      "auth.setup.create": "创建全新日记本",
+      "auth.setup.import": "从备份文件导入",
+      "auth.setup.password": "设置密码",
+      "auth.setup.password.desc": "这个密码将用于加密你的日记",
+      "auth.setup.confirm": "再次输入密码",
+      "auth.setup.mismatch": "两次输入的密码不一致",
+      "auth.setup.hint.title": "密码提示（可选）",
+      "auth.setup.hint.desc": "帮助你回忆密码的一句话",
+      "auth.setup.recovery": "保存恢复码",
+      "auth.setup.recovery.desc": "如果忘记密码，可以使用此恢复码重置。\n请务必保存到安全的地方。",
+      "auth.setup.copy": "复制",
+      "auth.setup.download": "下载",
+      "auth.setup.start": "开始使用",
+      // Nav
+      "nav.diary": "日记",
+      "nav.gallery": "相册",
+      "nav.library": "文库",
+      "nav.favorites": "收藏",
+      "nav.achievements": "勋章",
+      "nav.settings": "设置",
+      "nav.random": "随机回忆",
+      // Diary
+      "diary.search": "搜索日记...",
+      "diary.calendar": "日历",
+      "diary.input.placeholder": "写点什么...",
+      "diary.input.send": "发送",
+      "diary.empty.prompt": "今天有什么想说的吗？",
+      // Context menu
+      "menu.quote": "引用",
+      "menu.edit": "编辑",
+      "menu.favorite": "收藏",
+      "menu.tag": "标签",
+      "menu.delete": "删除",
+      // Empty states
+      "empty.gallery": "还没有图片呢，记录生活的美好瞬间吧",
+      "empty.library": "写下你的第一篇长文吧",
+      "empty.favorites": "收藏你珍视的每一段文字",
+      "empty.achievements": "开始写日记，解锁你的第一枚勋章",
+      // Stats
+      "stats.companion": "已陪伴你 {{days}} 天",
+      "stats.tree.age": "这本日记本已经 {{days}} 天了",
+      // Settings
+      "settings.account": "账户与安全",
+      "settings.ai": "AI 设置",
+      "settings.writing": "写作偏好",
+      "settings.display": "显示",
+      "settings.data": "数据管理",
+      "settings.about": "关于",
+      "settings.lock": "锁定并退出",
+    },
+  },
+  en: {
+    translation: {
+      "app.name": "Murmur",
+      "app.loading": "Loading...",
+      "auth.password.placeholder": "Enter password",
+      "auth.enter": "Enter",
+      "auth.hint": "Password hint",
+      "auth.forgot": "Forgot password",
+      "auth.setup.title": "Welcome to Murmur",
+      "auth.setup.subtitle": "Your private diary.\nRecord every day in chat style.",
+      "auth.setup.create": "Create new diary",
+      "auth.setup.import": "Import from backup",
+      "auth.setup.password": "Set password",
+      "auth.setup.password.desc": "This password will encrypt your diary",
+      "auth.setup.confirm": "Confirm password",
+      "auth.setup.mismatch": "Passwords do not match",
+      "auth.setup.hint.title": "Password hint (optional)",
+      "auth.setup.hint.desc": "A phrase to help you remember",
+      "auth.setup.recovery": "Save recovery code",
+      "auth.setup.recovery.desc": "Use this code to reset your password if forgotten.\nKeep it safe.",
+      "auth.setup.copy": "Copy",
+      "auth.setup.download": "Download",
+      "auth.setup.start": "Get started",
+      "nav.diary": "Diary",
+      "nav.gallery": "Gallery",
+      "nav.library": "Library",
+      "nav.favorites": "Favorites",
+      "nav.achievements": "Badges",
+      "nav.settings": "Settings",
+      "nav.random": "Random memory",
+      "diary.search": "Search diary...",
+      "diary.calendar": "Calendar",
+      "diary.input.placeholder": "Write something...",
+      "diary.input.send": "Send",
+      "diary.empty.prompt": "What's on your mind today?",
+      "menu.quote": "Quote",
+      "menu.edit": "Edit",
+      "menu.favorite": "Favorite",
+      "menu.tag": "Tag",
+      "menu.delete": "Delete",
+      "empty.gallery": "No photos yet. Capture life's beautiful moments!",
+      "empty.library": "Write your first article",
+      "empty.favorites": "Save the words you treasure",
+      "empty.achievements": "Start journaling to unlock badges",
+      "stats.companion": "{{days}} days together",
+      "stats.tree.age": "This diary is {{days}} days old",
+      "settings.account": "Account & Security",
+      "settings.ai": "AI Settings",
+      "settings.writing": "Writing Preferences",
+      "settings.display": "Display",
+      "settings.data": "Data Management",
+      "settings.about": "About",
+      "settings.lock": "Lock & Exit",
+    },
+  },
+};
+
+// Detect system language
+const systemLang = navigator.language.startsWith("zh") ? "zh" : "en";
+
+i18n.use(initReactI18next).init({
+  resources,
+  lng: systemLang,
+  fallbackLng: "en",
+  interpolation: {
+    escapeValue: false,
+  },
+});
+
+export default i18n;

@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  /* Murmur warm color palette */
+  --color-warm-50: #fdf8f4;
+  --color-warm-100: #faf0e6;
+  --color-warm-200: #f5e1cc;
+  --color-warm-300: #eecfae;
+  --color-warm-400: #e4b88a;
+  --color-warm-500: #d9a066;
+  --color-warm-600: #c4864a;
+  --color-warm-700: #a36b3a;
+  --color-warm-800: #845632;
+  --color-warm-900: #6c472c;
+
+  /* Chat bubble colors */
+  --color-bubble-user: #95ec69;
+  --color-bubble-user-bg: #95ec6920;
+  --color-bubble-ai: #ffffff;
+  --color-bubble-ai-bg: #f7f7f7;
+
+  /* UI colors */
+  --color-sidebar-bg: #f7f5f3;
+  --color-nav-bg: #edebe8;
+  --color-main-bg: #faf9f7;
+  --color-input-bg: #ffffff;
+  --color-border: #e8e5e1;
+  --color-text-primary: #2c2c2c;
+  --color-text-secondary: #8c8c8c;
+  --color-text-hint: #b0b0b0;
+  --color-accent: #7bb686;
+  --color-accent-hover: #6aa876;
+
+  /* Morandi tag palette */
+  --color-tag-blue: #8faabe;
+  --color-tag-green: #9cb89c;
+  --color-tag-pink: #c9a0a0;
+  --color-tag-purple: #a89bc4;
+  --color-tag-orange: #c9ad8a;
+  --color-tag-teal: #8ab5b0;
+  --color-tag-rose: #bf9bab;
+  --color-tag-sage: #a8b896;
+
+  /* Font sizes */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.875rem;
+  --font-size-lg: 1rem;
+
+  /* Spacing */
+  --radius-bubble: 12px;
+  --radius-card: 8px;
+  --radius-panel: 6px;
+}
+
+/* Base styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background: var(--color-main-bg);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d0ccc7;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b8b4af;
+}
+
+/* Input breathing animation */
+@keyframes input-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(123, 182, 134, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(123, 182, 134, 0.15);
+  }
+}
+
+.input-breathing {
+  animation: input-breathe 2.5s ease-in-out infinite;
+}

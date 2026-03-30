@@ -1,0 +1,119 @@
+import { create } from "zustand";
+import * as ipc from "../lib/ipc";
+import type { DiaryDay, Message } from "../lib/types";
+import dayjs from "dayjs";
+
+interface DiaryState {
+  selectedDate: string;
+  currentDay: DiaryDay | null;
+  messages: Message[];
+  diaryDays: DiaryDay[];
+  loading: boolean;
+
+  setSelectedDate: (date: string) => void;
+  loadToday: () => Promise<void>;
+  loadDay: (date: string) => Promise<void>;
+  loadDiaryList: (year: number, month: number) => Promise<void>;
+  sendTextMessage: (text: string) => Promise<void>;
+  editMessage: (messageId: number, content: string) => Promise<void>;
+  deleteMessage: (messageId: number) => Promise<void>;
+  sendMoodMessage: (mood: string) => Promise<void>;
+  uploadImage: (imageBytes: Uint8Array, compress: boolean) => Promise<void>;
+}
+
+export const useDiaryStore = create<DiaryState>((set, get) => ({
+  selectedDate: dayjs().format("YYYY-MM-DD"),
+  currentDay: null,
+  messages: [],
+  diaryDays: [],
+  loading: false,
+
+  setSelectedDate: (date: string) => {
+    set({ selectedDate: date });
+    get().loadDay(date);
+  },
+
+  loadToday: async () => {
+    const today = dayjs().format("YYYY-MM-DD");
+    set({ selectedDate: today, loading: true });
+    const day = await ipc.getOrCreateToday();
+    const messages = await ipc.getMessages(day.id);
+    set({ currentDay: day, messages, loading: false });
+
+    // Also load the diary list for current month
+    get().loadDiaryList(dayjs().year(), dayjs().month() + 1);
+  },
+
+  loadDay: async (date: string) => {
+    set({ loading: true });
+    const day = await ipc.getDiaryDay(date);
+    const messages = await ipc.getMessages(day.id);
+    set({ currentDay: day, messages, loading: false });
+  },
+
+  loadDiaryList: async (year: number, month: number) => {
+    const days = await ipc.listDiaryDays(year, month);
+    set({ diaryDays: days });
+  },
+
+  sendTextMessage: async (text: string) => {
+    const { currentDay } = get();
+    if (!currentDay) return;
+
+    const message = await ipc.sendMessage({
+      diary_day_id: currentDay.id,
+      kind: "text",
+      content: text,
+    });
+
+    set((state) => ({
+      messages: [...state.messages, message],
+    }));
+  },
+
+  editMessage: async (messageId: number, content: string) => {
+    await ipc.editMessage(messageId, content);
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.id === messageId ? { ...m, content } : m
+      ),
+    }));
+  },
+
+  deleteMessage: async (messageId: number) => {
+    await ipc.deleteMessage(messageId);
+    set((state) => ({
+      messages: state.messages.filter((m) => m.id !== messageId),
+    }));
+  },
+
+  sendMoodMessage: async (mood: string) => {
+    const { currentDay } = get();
+    if (!currentDay) return;
+
+    const message = await ipc.sendMessage({
+      diary_day_id: currentDay.id,
+      kind: "mood",
+      mood,
+    });
+
+    set((state) => ({
+      messages: [...state.messages, message],
+    }));
+  },
+
+  uploadImage: async (imageBytes: Uint8Array, compress: boolean) => {
+    const { currentDay } = get();
+    if (!currentDay) return;
+
+    const message = await ipc.uploadImage(
+      currentDay.id,
+      Array.from(imageBytes),
+      compress
+    );
+
+    // Reload messages to get the thumbnail
+    const messages = await ipc.getMessages(currentDay.id);
+    set({ messages });
+  },
+}));
