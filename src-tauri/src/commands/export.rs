@@ -157,6 +157,89 @@ pub fn export_diary_day(
     Ok(output)
 }
 
+/// Import database from a zip backup file
+#[tauri::command]
+pub fn import_database(state: State<AppState>, zip_path: String, password: String) -> Result<(), MurmurError> {
+    use crate::crypto::master_key as mk;
+    use crate::db::connection;
+
+    let zip_file = fs::File::open(&zip_path)?;
+    let mut archive = zip::ZipArchive::new(zip_file)
+        .map_err(|e| MurmurError::General(format!("Failed to open zip: {}", e)))?;
+
+    // Extract to a temp dir first
+    let temp_dir = state.data_dir.join("_import_temp");
+    if temp_dir.exists() {
+        fs::remove_dir_all(&temp_dir)?;
+    }
+    fs::create_dir_all(&temp_dir)?;
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)
+            .map_err(|e| MurmurError::General(format!("Zip read error: {}", e)))?;
+        let outpath = temp_dir.join(file.name());
+        if let Some(parent) = outpath.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        if !file.name().ends_with('/') {
+            let mut outfile = fs::File::create(&outpath)?;
+            std::io::copy(&mut file, &mut outfile)?;
+        }
+    }
+
+    // Verify password against the imported private.db
+    let imported_private_db = temp_dir.join("private.db");
+    if imported_private_db.exists() {
+        let conn = connection::open_or_create(&imported_private_db)?;
+        let (wrapped_key, salt, nonce): (Vec<u8>, Vec<u8>, Vec<u8>) = conn.query_row(
+            "SELECT master_key_by_password, password_salt, password_nonce FROM key_store WHERE id = 1",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )?;
+        let mut salt_arr = [0u8; 16];
+        salt_arr.copy_from_slice(&salt);
+        let mut nonce_arr = [0u8; 12];
+        nonce_arr.copy_from_slice(&nonce);
+
+        mk::try_unlock_with_password(&password, &wrapped_key, &salt_arr, &nonce_arr)
+            .map_err(|_| MurmurError::InvalidPassword)?;
+    }
+
+    // Close current connections
+    *state.private_db.lock().unwrap() = None;
+    *state.public_db.lock().unwrap() = None;
+    *state.master_key.lock().unwrap() = None;
+
+    // Replace files
+    let private_db_dest = state.data_dir.join("private.db");
+    let public_db_dest = state.data_dir.join("public.db");
+    let temp_private = temp_dir.join("private.db");
+    let temp_public = temp_dir.join("public.db");
+
+    if private_db_dest.exists() { fs::remove_file(&private_db_dest)?; }
+    if public_db_dest.exists() { fs::remove_file(&public_db_dest)?; }
+
+    if temp_private.exists() { fs::rename(&temp_private, &private_db_dest)?; }
+    if temp_public.exists() { fs::rename(&temp_public, &public_db_dest)?; }
+
+    // Copy media files
+    let temp_media = temp_dir.join("media");
+    if temp_media.exists() {
+        if state.media_dir.exists() {
+            fs::remove_dir_all(&state.media_dir)?;
+        }
+        // rename temp media to real media dir
+        fs::rename(&temp_media, &state.media_dir)?;
+    }
+
+    // Cleanup temp
+    if temp_dir.exists() {
+        fs::remove_dir_all(&temp_dir).ok();
+    }
+
+    Ok(())
+}
+
 /// Delete all data
 #[tauri::command]
 pub fn delete_all_data(state: State<AppState>) -> Result<(), MurmurError> {

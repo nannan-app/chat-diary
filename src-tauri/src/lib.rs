@@ -38,6 +38,10 @@ pub fn run() {
             commands::auth::lock,
             commands::auth::get_space,
             commands::auth::switch_space,
+            commands::auth::change_password,
+            commands::auth::reset_password_with_recovery,
+            commands::auth::regenerate_recovery_code,
+            commands::auth::update_password_hint,
             // Diary
             commands::diary::get_or_create_today,
             commands::diary::get_diary_day,
@@ -51,10 +55,12 @@ pub fn run() {
             commands::diary::get_all_articles,
             commands::diary::get_diary_dates,
             commands::diary::search,
+            commands::diary::get_random_diary_day,
             // Media
             commands::media::upload_image,
             commands::media::get_full_image,
             commands::media::get_thumbnail,
+            commands::media::list_all_images_with_thumbnails,
             // Settings
             commands::settings::get_setting,
             commands::settings::set_setting,
@@ -65,6 +71,8 @@ pub fn run() {
             commands::tags::delete_tag,
             commands::tags::set_day_tags,
             commands::tags::get_day_tags,
+            commands::tags::set_message_tags,
+            commands::tags::get_message_tags,
             // Favorites
             commands::favorites::add_favorite,
             commands::favorites::remove_favorite,
@@ -78,6 +86,7 @@ pub fn run() {
             // Export
             commands::export::export_database,
             commands::export::export_diary_day,
+            commands::export::import_database,
             commands::export::delete_all_data,
         ])
         .run(tauri::generate_context!())

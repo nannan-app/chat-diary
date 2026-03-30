@@ -105,3 +105,10 @@ pub struct LoginResult {
 pub struct SetupResponse {
     pub recovery_code: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GalleryImage {
+    pub id: i64,
+    pub thumbnail: Vec<u8>,
+    pub date: String,
+}

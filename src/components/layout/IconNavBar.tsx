@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useUIStore } from "../../stores/uiStore";
 import { useAuthStore } from "../../stores/authStore";
 import { useDiaryStore } from "../../stores/diaryStore";
+import * as ipc from "../../lib/ipc";
 import type { NavSection } from "../../lib/types";
 
 const navItems: { id: NavSection; icon: string; label: string }[] = [
@@ -53,6 +54,19 @@ export default function IconNavBar() {
           className="w-10 h-10 rounded-xl flex items-center justify-center
                      text-lg hover:bg-warm-200/50 transition-colors mt-2"
           title="随机回忆"
+          onClick={async () => {
+            try {
+              const day = await ipc.getRandomDiaryDay();
+              if (day) {
+                useDiaryStore.getState().setSelectedDate(day.date);
+                setActiveNav("diary");
+                // Track for achievement
+                await ipc.setSetting("used_random_memory", "true");
+              }
+            } catch (e) {
+              console.log("No random memory available");
+            }
+          }}
         >
           🎲
         </button>

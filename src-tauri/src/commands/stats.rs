@@ -139,6 +139,54 @@ pub fn check_and_unlock_achievements(state: State<AppState>) -> Result<Vec<Strin
             newly_unlocked.push("night_owl".to_string());
         }
 
+        // sunny_week: 7 consecutive days with happy mood
+        let happy_days: i64 = conn.query_row(
+            "SELECT COUNT(DISTINCT m.diary_day_id) FROM messages m
+             JOIN diary_days d ON d.id = m.diary_day_id
+             WHERE m.kind = 'mood' AND m.mood IN ('😊', '😄', '🥰')
+             AND d.date >= date('now', '-7 days')",
+            [], |row| row.get(0)
+        ).unwrap_or(0);
+        if happy_days >= 7 && try_unlock(conn, "sunny_week", &now)? {
+            newly_unlocked.push("sunny_week".to_string());
+        }
+
+        // mood_painter: used all mood types
+        let distinct_moods: i64 = conn.query_row(
+            "SELECT COUNT(DISTINCT mood) FROM messages WHERE kind = 'mood' AND mood IS NOT NULL",
+            [], |row| row.get(0)
+        ).unwrap_or(0);
+        if distinct_moods >= 10 && try_unlock(conn, "mood_painter", &now)? {
+            newly_unlocked.push("mood_painter".to_string());
+        }
+
+        // ai_first: used AI summary at least once
+        let ai_count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM messages WHERE kind = 'ai_reply'",
+            [], |row| row.get(0)
+        ).unwrap_or(0);
+        if ai_count >= 1 && try_unlock(conn, "ai_first", &now)? {
+            newly_unlocked.push("ai_first".to_string());
+        }
+
+        // remote_delivery: first message from telegram/wechat
+        let remote_count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM messages WHERE source IN ('telegram', 'wechat')",
+            [], |row| row.get(0)
+        ).unwrap_or(0);
+        if remote_count >= 1 && try_unlock(conn, "remote_delivery", &now)? {
+            newly_unlocked.push("remote_delivery".to_string());
+        }
+
+        // time_traveler: used random memory feature (tracked via settings)
+        let used_random: bool = conn.query_row(
+            "SELECT COUNT(*) FROM settings WHERE key = 'used_random_memory' AND value = 'true'",
+            [], |row| row.get::<_, i64>(0).map(|c| c > 0)
+        ).unwrap_or(false);
+        if used_random && try_unlock(conn, "time_traveler", &now)? {
+            newly_unlocked.push("time_traveler".to_string());
+        }
+
         Ok(newly_unlocked)
     })
 }

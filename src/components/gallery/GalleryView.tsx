@@ -23,9 +23,12 @@ export default function GalleryView() {
 
   const loadImages = async () => {
     setLoading(true);
-    // We need a backend command to list all images with thumbnails
-    // For now, use the existing list from diary days
-    // TODO: add list_all_images_with_thumbnails command
+    try {
+      const result = await ipc.listAllImagesWithThumbnails();
+      setImages(result);
+    } catch (e) {
+      console.log("Failed to load gallery images:", e);
+    }
     setLoading(false);
   };
 
@@ -41,6 +44,14 @@ export default function GalleryView() {
     setActiveNav("diary");
     setLightbox(null);
   };
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center text-text-hint">
+        <p>加载中...</p>
+      </div>
+    );
+  }
 
   if (images.length === 0) {
     return (

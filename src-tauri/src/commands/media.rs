@@ -1,6 +1,6 @@
 use tauri::State;
 
-use crate::db::{media_repo, diary_repo, models::Message};
+use crate::db::{media_repo, diary_repo, models::{Message, GalleryImage}};
 use crate::error::MurmurError;
 use crate::media::{storage, thumbnail};
 use crate::state::{AppState, SpaceType};
@@ -108,4 +108,34 @@ pub fn get_thumbnail(state: State<AppState>, image_id: i64) -> Result<Vec<u8>, M
     let conn = db_lock.as_ref().ok_or(MurmurError::NotAuthenticated)?;
 
     media_repo::get_thumbnail(conn, image_id)
+}
+
+/// List all images with thumbnails for gallery view
+#[tauri::command]
+pub fn list_all_images_with_thumbnails(state: State<AppState>) -> Result<Vec<GalleryImage>, MurmurError> {
+    let space = state.space.lock().unwrap().clone();
+    let db_lock = match space {
+        SpaceType::Private => state.private_db.lock().unwrap(),
+        SpaceType::Public => state.public_db.lock().unwrap(),
+    };
+    let conn = db_lock.as_ref().ok_or(MurmurError::NotAuthenticated)?;
+
+    let mut stmt = conn.prepare(
+        "SELECT i.id, i.thumbnail, d.date
+         FROM images i
+         JOIN diary_days d ON d.id = i.diary_day_id
+         ORDER BY i.created_at DESC"
+    )?;
+
+    let images = stmt
+        .query_map([], |row| {
+            Ok(GalleryImage {
+                id: row.get(0)?,
+                thumbnail: row.get(1)?,
+                date: row.get(2)?,
+            })
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(images)
 }

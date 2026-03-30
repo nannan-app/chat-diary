@@ -116,6 +116,40 @@ export const aiSummarize = (params: {
   personality: string;
 }) => invoke<Message>("ai_summarize", params);
 
+// Auth - extended
+export const changePassword = (old_password: string, new_password: string, new_hint?: string) =>
+  invoke<void>("change_password", { old_password, new_password, new_hint: new_hint ?? null });
+export const resetPasswordWithRecovery = (recovery_code: string, new_password: string, new_hint?: string) =>
+  invoke<SetupResponse>("reset_password_with_recovery", { recovery_code, new_password, new_hint: new_hint ?? null });
+export const regenerateRecoveryCode = () =>
+  invoke<string>("regenerate_recovery_code");
+export const updatePasswordHint = (hint?: string) =>
+  invoke<void>("update_password_hint", { hint: hint ?? null });
+
+// Diary - extended
+export const getRandomDiaryDay = () =>
+  invoke<DiaryDay | null>("get_random_diary_day");
+
+// Media - extended
+export const listAllImagesWithThumbnails = () =>
+  invoke<{id: number; thumbnail: number[]; date: string}[]>("list_all_images_with_thumbnails");
+
+// Tags - extended
+export const setMessageTags = (message_id: number, tag_ids: number[]) =>
+  invoke<void>("set_message_tags", { message_id, tag_ids });
+export const getMessageTags = (message_id: number) =>
+  invoke<Tag[]>("get_message_tags", { message_id });
+
+// Export/Import
+export const exportDatabase = (output_path: string) =>
+  invoke<void>("export_database", { output_path });
+export const exportDiaryDay = (diary_day_id: number, format: string) =>
+  invoke<string>("export_diary_day", { diary_day_id, format });
+export const deleteAllData = () =>
+  invoke<void>("delete_all_data");
+export const importDatabase = (zip_path: string, password: string) =>
+  invoke<void>("import_database", { zip_path, password });
+
 // Settings
 export const getSetting = (key: string) =>
   invoke<string | null>("get_setting", { key });

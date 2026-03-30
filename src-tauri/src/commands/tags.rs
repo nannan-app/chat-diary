@@ -75,6 +75,7 @@ pub fn create_tag(state: State<AppState>, name: String) -> Result<Tag, MurmurErr
 pub fn delete_tag(state: State<AppState>, tag_id: i64) -> Result<(), MurmurError> {
     with_db(&state, |conn| {
         conn.execute("DELETE FROM diary_day_tags WHERE tag_id = ?1", [tag_id])?;
+        conn.execute("DELETE FROM message_tags WHERE tag_id = ?1", [tag_id])?;
         conn.execute("DELETE FROM tags WHERE id = ?1 AND is_system = 0", [tag_id])?;
         Ok(())
     })
@@ -104,6 +105,43 @@ pub fn get_day_tags(state: State<AppState>, diary_day_id: i64) -> Result<Vec<Tag
         )?;
         let tags = stmt
             .query_map([diary_day_id], |row| {
+                Ok(Tag {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    color: row.get(2)?,
+                    is_system: row.get(3)?,
+                    sort_order: row.get(4)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(tags)
+    })
+}
+
+#[tauri::command]
+pub fn set_message_tags(state: State<AppState>, message_id: i64, tag_ids: Vec<i64>) -> Result<(), MurmurError> {
+    with_db(&state, |conn| {
+        conn.execute("DELETE FROM message_tags WHERE message_id = ?1", [message_id])?;
+        for tag_id in &tag_ids {
+            conn.execute(
+                "INSERT INTO message_tags (message_id, tag_id) VALUES (?1, ?2)",
+                rusqlite::params![message_id, tag_id],
+            )?;
+        }
+        Ok(())
+    })
+}
+
+#[tauri::command]
+pub fn get_message_tags(state: State<AppState>, message_id: i64) -> Result<Vec<Tag>, MurmurError> {
+    with_db(&state, |conn| {
+        let mut stmt = conn.prepare(
+            "SELECT t.id, t.name, t.color, t.is_system, t.sort_order
+             FROM tags t JOIN message_tags mt ON mt.tag_id = t.id
+             WHERE mt.message_id = ?1 ORDER BY t.sort_order"
+        )?;
+        let tags = stmt
+            .query_map([message_id], |row| {
                 Ok(Tag {
                     id: row.get(0)?,
                     name: row.get(1)?,

@@ -8,6 +8,16 @@ type Section = "account" | "ai" | "writing" | "display" | "data" | "about";
 export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const [activeSection, setActiveSection] = useState<Section>("account");
   const [settings, setSettings] = useState<Record<string, string>>({});
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangeHint, setShowChangeHint] = useState(false);
+  const [showRecoveryCode, setShowRecoveryCode] = useState(false);
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [hintText, setHintText] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [accountError, setAccountError] = useState("");
+  const [accountSuccess, setAccountSuccess] = useState("");
   const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
@@ -83,27 +93,70 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
           {activeSection === "account" && (
             <div className="space-y-4">
               <SettingItem label="修改密码">
-                <button className="text-sm text-accent hover:text-accent-hover">
-                  修改
+                <button onClick={() => { setShowChangePassword(!showChangePassword); setAccountError(""); setAccountSuccess(""); }} className="text-sm text-accent hover:text-accent-hover">
+                  {showChangePassword ? "取消" : "修改"}
                 </button>
               </SettingItem>
+              {showChangePassword && (
+                <div className="space-y-2 pl-2">
+                  <input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder="旧密码" className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
+                  <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="新密码" className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
+                  <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="确认新密码" className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
+                  {accountError && <p className="text-xs text-red-400">{accountError}</p>}
+                  {accountSuccess && <p className="text-xs text-green-500">{accountSuccess}</p>}
+                  <button onClick={async () => {
+                    if (newPw !== confirmPw) { setAccountError("两次密码不一致"); return; }
+                    try {
+                      await ipc.changePassword(oldPw, newPw);
+                      setAccountSuccess("密码修改成功");
+                      setOldPw(""); setNewPw(""); setConfirmPw("");
+                      setTimeout(() => setShowChangePassword(false), 1500);
+                    } catch { setAccountError("旧密码验证失败"); }
+                  }} className="text-sm bg-accent text-white px-3 py-1 rounded-lg hover:bg-accent-hover">确认修改</button>
+                </div>
+              )}
+
               <SettingItem label="密码提示语">
-                <button className="text-sm text-accent hover:text-accent-hover">
-                  修改
+                <button onClick={() => { setShowChangeHint(!showChangeHint); setAccountError(""); setAccountSuccess(""); }} className="text-sm text-accent hover:text-accent-hover">
+                  {showChangeHint ? "取消" : "修改"}
                 </button>
               </SettingItem>
+              {showChangeHint && (
+                <div className="space-y-2 pl-2">
+                  <input type="text" value={hintText} onChange={e => setHintText(e.target.value)} placeholder="新的密码提示语" className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
+                  {accountSuccess && <p className="text-xs text-green-500">{accountSuccess}</p>}
+                  <button onClick={async () => {
+                    await ipc.updatePasswordHint(hintText || undefined);
+                    setAccountSuccess("提示语已更新");
+                    setTimeout(() => setShowChangeHint(false), 1500);
+                  }} className="text-sm bg-accent text-white px-3 py-1 rounded-lg hover:bg-accent-hover">保存</button>
+                </div>
+              )}
+
               <SettingItem label="恢复码">
-                <button className="text-sm text-accent hover:text-accent-hover">
-                  查看
+                <button onClick={async () => {
+                  if (!showRecoveryCode) {
+                    try {
+                      const code = await ipc.regenerateRecoveryCode();
+                      setRecoveryCode(code);
+                      setShowRecoveryCode(true);
+                    } catch { setAccountError("无法生成恢复码"); }
+                  } else {
+                    setShowRecoveryCode(false);
+                  }
+                }} className="text-sm text-accent hover:text-accent-hover">
+                  {showRecoveryCode ? "隐藏" : "重新生成"}
                 </button>
               </SettingItem>
+              {showRecoveryCode && (
+                <div className="pl-2">
+                  <div className="bg-warm-100 p-2 rounded-lg font-mono text-sm text-center select-all">{recoveryCode}</div>
+                  <p className="text-xs text-text-hint mt-1">请妥善保存，旧恢复码已失效</p>
+                </div>
+              )}
+
               <SettingItem label="生日">
-                <input
-                  type="date"
-                  value={settings.birthday || ""}
-                  onChange={(e) => updateSetting("birthday", e.target.value)}
-                  className="text-sm border border-border rounded-lg px-2 py-1"
-                />
+                <input type="date" value={settings.birthday || ""} onChange={(e) => updateSetting("birthday", e.target.value)} className="text-sm border border-border rounded-lg px-2 py-1" />
               </SettingItem>
             </div>
           )}
@@ -218,7 +271,17 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               <SettingItem label="语言">
                 <select
                   value={settings.language || "auto"}
-                  onChange={(e) => updateSetting("language", e.target.value)}
+                  onChange={async (e) => {
+                    const val = e.target.value;
+                    await updateSetting("language", val);
+                    const { default: i18n } = await import("../../lib/i18n");
+                    if (val === "auto") {
+                      const lang = navigator.language.startsWith("zh") ? "zh" : "en";
+                      i18n.changeLanguage(lang);
+                    } else {
+                      i18n.changeLanguage(val);
+                    }
+                  }}
                   className="text-sm border border-border rounded-lg px-2 py-1"
                 >
                   <option value="auto">跟随系统</option>
@@ -232,20 +295,57 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
           {activeSection === "data" && (
             <div className="space-y-4">
               <SettingItem label="导出数据库">
-                <button className="text-sm text-accent hover:text-accent-hover">
+                <button onClick={async () => {
+                  const { save } = await import("@tauri-apps/plugin-dialog");
+                  const path = await save({ defaultPath: "murmur-backup.zip", filters: [{ name: "ZIP", extensions: ["zip"] }] });
+                  if (path) {
+                    try {
+                      await ipc.exportDatabase(path);
+                      alert("导出成功！");
+                    } catch (e: any) {
+                      alert("导出失败：" + e);
+                    }
+                  }
+                }} className="text-sm text-accent hover:text-accent-hover">
                   导出
                 </button>
               </SettingItem>
               <SettingItem label="导入数据库">
-                <button className="text-sm text-accent hover:text-accent-hover">
-                  全新导入
-                </button>
-                <button className="text-sm text-accent hover:text-accent-hover ml-2">
-                  合并导入
+                <button onClick={async () => {
+                  const { open } = await import("@tauri-apps/plugin-dialog");
+                  const path = await open({ filters: [{ name: "ZIP", extensions: ["zip"] }] });
+                  if (path) {
+                    const password = prompt("请输入备份文件的密码：");
+                    if (password) {
+                      try {
+                        await ipc.importDatabase(path as string, password);
+                        alert("导入成功！请重新启动应用。");
+                        window.location.reload();
+                      } catch (e: any) {
+                        alert("导入失败：" + e);
+                      }
+                    }
+                  }
+                }} className="text-sm text-accent hover:text-accent-hover">
+                  导入
                 </button>
               </SettingItem>
               <SettingItem label="删除所有数据">
-                <button className="text-sm text-red-400 hover:text-red-500">
+                <button onClick={async () => {
+                  const confirmed = confirm("确定要删除所有数据吗？此操作不可恢复！");
+                  if (confirmed) {
+                    const doubleConfirm = confirm("再次确认：所有日记、图片、设置都将被永久删除。确定吗？");
+                    if (doubleConfirm) {
+                      try {
+                        await ipc.deleteAllData();
+                        alert("所有数据已删除。");
+                        window.location.reload();
+                      } catch (e: any) {
+                        alert("删除失败：" + e);
+                      }
+                    }
+                  }
+                }} className="text-sm text-red-400 hover:text-red-500">
                   删除
                 </button>
               </SettingItem>

@@ -193,3 +193,26 @@ pub fn get_diary_dates(state: State<AppState>, year: i32, month: u32) -> Result<
 pub fn search(state: State<AppState>, query: String) -> Result<Vec<SearchResult>, MurmurError> {
     with_db(&state, |conn| diary_repo::search(conn, &query))
 }
+
+/// Get a random diary day that has entries
+#[tauri::command]
+pub fn get_random_diary_day(state: State<AppState>) -> Result<Option<DiaryDay>, MurmurError> {
+    with_db(&state, |conn| {
+        let day = conn.query_row(
+            "SELECT id, date, summary, word_count, created_at, updated_at FROM diary_days WHERE word_count > 0 ORDER BY RANDOM() LIMIT 1",
+            [],
+            |row| {
+                Ok(DiaryDay {
+                    id: row.get(0)?,
+                    date: row.get(1)?,
+                    summary: row.get(2)?,
+                    word_count: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                })
+            },
+        ).ok();
+
+        Ok(day)
+    })
+}

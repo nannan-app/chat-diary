@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "../../stores/authStore";
-import { getPasswordHint } from "../../lib/ipc";
+import { getPasswordHint, resetPasswordWithRecovery } from "../../lib/ipc";
 import { GREETINGS } from "../../lib/constants";
 
 export default function LoginScreen() {
@@ -11,6 +11,14 @@ export default function LoginScreen() {
   );
   const [hint, setHint] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [newHint, setNewHint] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [newRecoveryCode, setNewRecoveryCode] = useState("");
   const login = useAuthStore((s) => s.login);
 
   useEffect(() => {
@@ -120,11 +128,107 @@ export default function LoginScreen() {
             )}
           </AnimatePresence>
 
-          <button className="text-xs text-text-hint hover:text-accent transition-colors mt-1">
+          <button
+            onClick={() => setShowForgot(true)}
+            className="text-xs text-text-hint hover:text-accent transition-colors mt-1"
+          >
             忘记密码
           </button>
         </motion.div>
       </motion.div>
+
+      {showForgot && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-6 w-96 shadow-xl">
+            {!resetSuccess ? (
+              <>
+                <h3 className="text-lg font-medium mb-4">重置密码</h3>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={recoveryCode}
+                    onChange={(e) => setRecoveryCode(e.target.value)}
+                    placeholder="输入恢复码 (XXXX-XXXX-XXXX-XXXX-XXXX)"
+                    className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:border-accent"
+                  />
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="新密码"
+                    className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:border-accent"
+                  />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="确认新密码"
+                    className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:border-accent"
+                  />
+                  <input
+                    type="text"
+                    value={newHint}
+                    onChange={(e) => setNewHint(e.target.value)}
+                    placeholder="密码提示（可选）"
+                    className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:border-accent"
+                  />
+                  {resetError && <p className="text-red-400 text-xs">{resetError}</p>}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowForgot(false)}
+                      className="flex-1 py-2 rounded-lg border border-border text-sm hover:bg-warm-100"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (newPassword !== confirmPassword) {
+                          setResetError("两次密码不一致");
+                          return;
+                        }
+                        if (!recoveryCode.trim() || !newPassword.trim()) {
+                          setResetError("请填写恢复码和新密码");
+                          return;
+                        }
+                        try {
+                          const resp = await resetPasswordWithRecovery(
+                            recoveryCode.trim(), newPassword, newHint || undefined
+                          );
+                          setNewRecoveryCode(resp.recovery_code);
+                          setResetSuccess(true);
+                        } catch (e: any) {
+                          setResetError("恢复码验证失败，请检查后重试");
+                        }
+                      }}
+                      className="flex-1 py-2 rounded-lg bg-accent text-white text-sm hover:bg-accent-hover"
+                    >
+                      重置密码
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-medium mb-4">密码重置成功</h3>
+                <p className="text-sm text-text-secondary mb-3">请保存新的恢复码：</p>
+                <div className="bg-warm-100 p-3 rounded-lg font-mono text-center text-sm mb-4 select-all">
+                  {newRecoveryCode}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowForgot(false);
+                    setResetSuccess(false);
+                    window.location.reload();
+                  }}
+                  className="w-full py-2 rounded-lg bg-accent text-white text-sm hover:bg-accent-hover"
+                >
+                  前往登录
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

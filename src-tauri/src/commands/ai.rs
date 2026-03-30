@@ -64,6 +64,22 @@ pub async fn ai_summarize(
         return Err(MurmurError::General("今天还没有写日记内容".into()));
     }
 
+    // Rate limit for built-in AI (10/day)
+    if api_provider == "builtin" {
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+        let count = with_db(&state, |conn| {
+            let count: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM messages WHERE diary_day_id IN (SELECT id FROM diary_days WHERE date = ?1) AND kind = 'ai_reply' AND source = 'app'",
+                [&today],
+                |row| row.get(0),
+            ).unwrap_or(0);
+            Ok(count)
+        })?;
+        if count >= 10 {
+            return Err(MurmurError::General("今日内置 AI 使用次数已达上限（10次/天），请设置自定义 API Key 获得无限次使用".into()));
+        }
+    }
+
     // Build AI prompt
     let system_prompt = format!(
         "{}。请阅读用户今天的日记内容，给出温暖的总结和反馈。不要太长，2-3段即可。",
