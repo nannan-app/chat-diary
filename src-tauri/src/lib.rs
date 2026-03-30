@@ -11,17 +11,29 @@ use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_notification::init());
+
+    // WebDriver plugin for e2e testing (debug builds only)
+    #[cfg(debug_assertions)]
+    {
+        builder = builder.plugin(tauri_plugin_webdriver_automation::init());
+    }
+
+    builder
         .setup(|app| {
-            let data_dir = app
-                .path()
-                .app_data_dir()
-                .expect("Failed to get app data dir");
+            // Allow overriding data dir via env var (for e2e tests isolation)
+            let data_dir = if let Ok(dir) = std::env::var("MURMUR_DATA_DIR") {
+                std::path::PathBuf::from(dir)
+            } else {
+                app.path()
+                    .app_data_dir()
+                    .expect("Failed to get app data dir")
+            };
             std::fs::create_dir_all(&data_dir).ok();
 
             let app_state = AppState::new(data_dir);

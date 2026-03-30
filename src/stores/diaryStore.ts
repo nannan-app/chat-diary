@@ -106,7 +106,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     const { currentDay } = get();
     if (!currentDay) return;
 
-    const message = await ipc.uploadImage(
+    await ipc.uploadImage(
       currentDay.id,
       Array.from(imageBytes),
       compress

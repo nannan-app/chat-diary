@@ -11,7 +11,8 @@ export default function DiaryList() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
-  const [searching, setSearching] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_searching, setSearching] = useState(false);
   const diaryDays = useDiaryStore((s) => s.diaryDays);
   const selectedDate = useDiaryStore((s) => s.selectedDate);
   const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);

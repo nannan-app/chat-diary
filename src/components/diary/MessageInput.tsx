@@ -16,9 +16,10 @@ export default function MessageInput() {
   const [showEditor, setShowEditor] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const typingTimer = useRef<ReturnType<typeof setTimeout>>();
+  const typingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const [useOriginal, setUseOriginal] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [useOriginal, _setUseOriginal] = useState(false);
   const sendTextMessage = useDiaryStore((s) => s.sendTextMessage);
   const sendMoodMessage = useDiaryStore((s) => s.sendMoodMessage);
   const uploadImageFn = useDiaryStore((s) => s.uploadImage);
