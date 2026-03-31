@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function CalendarPopover({ visible, onClose }: Props) {
+  const { t } = useTranslation();
   const [viewDate, setViewDate] = useState(dayjs());
   const [datesWithEntries, setDatesWithEntries] = useState<Set<string>>(new Set());
   const selectedDate = useDiaryStore((s) => s.selectedDate);
@@ -36,7 +38,7 @@ export default function CalendarPopover({ visible, onClose }: Props) {
     onClose();
   };
 
-  const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+  const weekDays = t("calendar.weekdays", { returnObjects: true }) as string[];
 
   return (
     <AnimatePresence>
@@ -59,7 +61,7 @@ export default function CalendarPopover({ visible, onClose }: Props) {
                 ‹
               </button>
               <span className="text-sm font-medium text-text-primary">
-                {viewDate.format("YYYY年M月")}
+                {viewDate.format(t("diary.yearMonthFormat"))}
               </span>
               <button
                 onClick={nextMonth}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import * as ipc from "../../lib/ipc";
 import type { Tag } from "../../lib/types";
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function TagPanel({ visible, onClose }: Props) {
+  const { t } = useTranslation();
   const [tags, setTags] = useState<Tag[]>([]);
   const [dayTagIds, setDayTagIds] = useState<Set<number>>(new Set());
   const [newTagName, setNewTagName] = useState("");
@@ -64,7 +66,7 @@ export default function TagPanel({ visible, onClose }: Props) {
           className="px-3 py-2 border-t border-border/50"
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-text-hint">今日标签</span>
+            <span className="text-xs text-text-hint">{t("tag.todayTags")}</span>
             <button onClick={onClose} className="text-xs text-text-hint hover:text-text-secondary">
               ✕
             </button>
@@ -105,7 +107,7 @@ export default function TagPanel({ visible, onClose }: Props) {
               value={newTagName}
               onChange={(e) => setNewTagName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreateTag()}
-              placeholder="新标签..."
+              placeholder={t("tag.newPlaceholder")}
               className="flex-1 px-2 py-1 rounded-lg bg-white border border-border text-xs
                          placeholder:text-text-hint focus:outline-none focus:border-accent"
             />
@@ -115,7 +117,7 @@ export default function TagPanel({ visible, onClose }: Props) {
               className="px-2 py-1 rounded-lg bg-accent text-white text-xs
                          disabled:opacity-50 hover:bg-accent-hover transition-colors"
             >
-              添加
+              {t("tag.add")}
             </button>
           </div>
         </motion.div>

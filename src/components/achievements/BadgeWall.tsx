@@ -1,28 +1,26 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import * as ipc from "../../lib/ipc";
 import type { Achievement, WritingStats } from "../../lib/types";
 
-const BADGE_INFO: Record<string, { name: string; icon: string; description: string; category: string }> = {
-  first_entry: { name: "初次提笔", icon: "✏️", description: "写下第一篇日记", category: "坚持" },
-  seven_days: { name: "七日之约", icon: "📅", description: "累计写满 7 天", category: "坚持" },
-  thirty_days: { name: "月光收集者", icon: "🌙", description: "累计写满 30 天", category: "坚持" },
-  one_year: { name: "年轮", icon: "🌳", description: "累计写满 365 天", category: "坚持" },
-  thousand_words: { name: "千字文", icon: "📝", description: "单日超过 1000 字", category: "产量" },
-  ten_thousand_words: { name: "万字书", icon: "📖", description: "累计超过 10000 字", category: "产量" },
-  hundred_thousand_words: { name: "十万个心事", icon: "💭", description: "累计超过 100000 字", category: "产量" },
-  sunny_week: { name: "阳光满溢", icon: "☀️", description: "连续 7 天标记开心心情", category: "心情" },
-  mood_painter: { name: "情绪画家", icon: "🎨", description: "使用过所有心情标签", category: "心情" },
-  first_photo: { name: "第一帧", icon: "📷", description: "上传第一张图片", category: "图片" },
-  hundred_photos: { name: "生活记录者", icon: "🖼️", description: "累计上传 100 张图片", category: "图片" },
-  ai_first: { name: "AI 初见", icon: "🤖", description: "第一次使用 AI 总结", category: "探索" },
-  remote_delivery: { name: "远程投递", icon: "📨", description: "通过 Telegram 写日记", category: "探索" },
-  time_traveler: { name: "时光旅人", icon: "🎲", description: "使用随机回忆功能", category: "探索" },
-  night_owl: { name: "夜猫子", icon: "🦉", description: "凌晨 3 点写日记", category: "彩蛋" },
+const BADGE_ICONS: Record<string, string> = {
+  first_entry: "✏️", seven_days: "📅", thirty_days: "🌙", one_year: "🌳",
+  thousand_words: "📝", ten_thousand_words: "📖", hundred_thousand_words: "💭",
+  sunny_week: "☀️", mood_painter: "🎨", first_photo: "📷", hundred_photos: "🖼️",
+  ai_first: "🤖", remote_delivery: "📨", time_traveler: "🎲", night_owl: "🦉",
 };
 
-// Growth tree stages based on days of use
+const BADGE_CATEGORIES: Record<string, string> = {
+  first_entry: "persistence", seven_days: "persistence", thirty_days: "persistence", one_year: "persistence",
+  thousand_words: "output", ten_thousand_words: "output", hundred_thousand_words: "output",
+  sunny_week: "mood", mood_painter: "mood",
+  first_photo: "photo", hundred_photos: "photo",
+  ai_first: "explore", remote_delivery: "explore", time_traveler: "explore",
+  night_owl: "easter",
+};
+
 function getTreeEmoji(days: number): string {
   if (days < 7) return "🌱";
   if (days < 30) return "🌿";
@@ -32,6 +30,7 @@ function getTreeEmoji(days: number): string {
 }
 
 export default function BadgeWall() {
+  const { t } = useTranslation();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [stats, setStats] = useState<WritingStats | null>(null);
 
@@ -45,7 +44,7 @@ export default function BadgeWall() {
     ? dayjs().diff(dayjs(stats.first_entry_date || undefined), "day") + 1
     : 0;
 
-  const categories = ["坚持", "产量", "心情", "图片", "探索", "彩蛋"];
+  const categoryKeys = ["persistence", "output", "mood", "photo", "explore", "easter"];
 
   return (
     <div className="h-full overflow-y-auto">
@@ -65,7 +64,7 @@ export default function BadgeWall() {
           transition={{ delay: 0.4 }}
           className="text-text-secondary text-sm"
         >
-          这本日记本已经 <span className="text-accent font-medium">{totalDays}</span> 天了
+          {t("stats.tree.age", { days: totalDays })}
         </motion.p>
         <motion.p
           initial={{ opacity: 0 }}
@@ -73,26 +72,25 @@ export default function BadgeWall() {
           transition={{ delay: 0.5 }}
           className="text-text-hint text-xs mt-1"
         >
-          已解锁 {unlockedCount} / {achievements.length} 枚勋章
+          {t("stats.badgeCount", { unlocked: unlockedCount, total: achievements.length })}
         </motion.p>
       </div>
 
       {/* Badge grid by category */}
       <div className="px-6 pb-6">
-        {categories.map((cat) => {
+        {categoryKeys.map((catKey) => {
           const catBadges = achievements.filter(
-            (a) => BADGE_INFO[a.key]?.category === cat
+            (a) => BADGE_CATEGORIES[a.key] === catKey
           );
           if (catBadges.length === 0) return null;
 
           return (
-            <div key={cat} className="mb-6">
+            <div key={catKey} className="mb-6">
               <h3 className="text-xs text-text-hint mb-2 uppercase tracking-wider">
-                {cat}
+                {t(`badge.cat.${catKey}`)}
               </h3>
               <div className="grid grid-cols-3 gap-3">
                 {catBadges.map((a, i) => {
-                  const info = BADGE_INFO[a.key];
                   const unlocked = !!a.unlocked_at;
                   return (
                     <motion.div
@@ -107,17 +105,17 @@ export default function BadgeWall() {
                         }`}
                     >
                       <div className={`text-2xl mb-1 ${unlocked ? "" : "grayscale"}`}>
-                        {info?.icon || "❓"}
+                        {BADGE_ICONS[a.key] || "❓"}
                       </div>
                       <p className="text-xs font-medium text-text-primary">
-                        {info?.name || a.key}
+                        {t(`badge.${a.key}`)}
                       </p>
                       <p className="text-xs text-text-hint mt-0.5">
-                        {info?.description}
+                        {t(`badge.desc.${a.key}`)}
                       </p>
                       {unlocked && a.unlocked_at && (
                         <p className="text-xs text-accent mt-1">
-                          {dayjs(a.unlocked_at).format("M月D日")}
+                          {dayjs(a.unlocked_at).format(t("diary.monthDayFormat"))}
                         </p>
                       )}
                     </motion.div>

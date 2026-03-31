@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import { FileText } from "lucide-react";
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function MessageBubble({ message }: Props) {
+  const { t } = useTranslation();
   const showContextMenu = useUIStore((s) => s.showContextMenu);
   const isUser = message.kind !== "ai_reply";
   const time = dayjs(message.created_at).format("HH:mm");
@@ -57,6 +59,11 @@ export default function MessageBubble({ message }: Props) {
             src={url}
             alt=""
             className="rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => {
+              if (message.image_id) {
+                useUIStore.getState().setViewingImageId(message.image_id);
+              }
+            }}
           />
           <div className={`flex items-center gap-1 mt-0.5 ${isUser ? "justify-end" : "justify-start"}`}>
             {sourceIcon && <span className="text-xs">{sourceIcon}</span>}
@@ -106,7 +113,7 @@ export default function MessageBubble({ message }: Props) {
             <div className="flex items-center gap-1 pl-7">
               <div className="w-full h-px bg-border/50" />
             </div>
-            <p className="text-xs text-accent mt-1.5 pl-7">长文 · 点击查看全文</p>
+            <p className="text-xs text-accent mt-1.5 pl-7">{t("diary.article.clickToView")}</p>
           </div>
           <div className="flex items-center gap-1 mt-0.5 justify-end">
             <span className="text-xs text-text-hint">{time}</span>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useUIStore } from "../../stores/uiStore";
@@ -6,6 +7,7 @@ import * as ipc from "../../lib/ipc";
 import type { Article } from "../../lib/types";
 
 export default function ArticleViewer() {
+  const { t } = useTranslation();
   const articleId = useUIStore((s) => s.viewingArticleId);
   const setViewingArticleId = useUIStore((s) => s.setViewingArticleId);
   const [article, setArticle] = useState<Article | null>(null);
@@ -56,7 +58,7 @@ export default function ArticleViewer() {
 
         {/* Footer */}
         <div className="px-6 py-3 border-t border-border/50 flex items-center justify-between">
-          <span className="text-xs text-text-hint">{article.word_count} 字</span>
+          <span className="text-xs text-text-hint">{article.word_count} {t("diary.words")}</span>
           <span className="text-xs text-text-hint">{article.created_at}</span>
         </div>
       </motion.div>

@@ -95,7 +95,7 @@ export default function ContextMenu() {
           const currentDay = useDiaryStore.getState().currentDay;
           await ipc.addFavorite({
             messageId: message.id,
-            contentPreview: message.content || message.mood || "[图片]",
+            contentPreview: message.content || message.mood || t("diary.image.photo"),
             sourceDate: currentDay?.date || "",
           });
         }
@@ -136,9 +136,9 @@ export default function ContextMenu() {
             ))
           ) : (
             <div className="px-2 py-1 min-w-[160px]" onClick={(e) => e.stopPropagation()}>
-              <div className="text-xs text-text-hint mb-1 px-1">选择标签</div>
+              <div className="text-xs text-text-hint mb-1 px-1">{t("menu.selectTag")}</div>
               {allTags.length === 0 ? (
-                <p className="text-xs text-text-hint px-1 py-1">暂无标签，请先在日记页创建</p>
+                <p className="text-xs text-text-hint px-1 py-1">{t("menu.noTags")}</p>
               ) : (
                 allTags.map((tag) => (
                   <button
@@ -157,7 +157,7 @@ export default function ContextMenu() {
                 onClick={() => { setShowTagSelector(false); hideContextMenu(); }}
                 className="w-full mt-1 px-2 py-1 text-xs text-accent hover:bg-warm-100 rounded text-center"
               >
-                完成
+                {t("menu.done")}
               </button>
             </div>
           )}

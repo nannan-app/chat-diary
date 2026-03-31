@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDiaryStore } from "../../stores/diaryStore";
 
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export default function ImageDropZone({ children }: Props) {
+  const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
   const uploadImage = useDiaryStore((s) => s.uploadImage);
   let dragCounter = 0;
@@ -78,7 +80,7 @@ export default function ImageDropZone({ children }: Props) {
                          bg-white/80 text-center"
             >
               <p className="text-2xl mb-2">📷</p>
-              <p className="text-accent text-sm font-medium">放在这里吧~</p>
+              <p className="text-accent text-sm font-medium">{t("dropZone.hint")}</p>
             </motion.div>
           </motion.div>
         )}

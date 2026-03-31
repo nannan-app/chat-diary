@@ -105,7 +105,47 @@ describe("19 - Image UI", () => {
     expect(imgInfo!.imgSrc).toContain("blob:");
   });
 
-  it("19.5 should show timestamp below image", async () => {
+  it("19.5 should open lightbox when clicking image in chat", async () => {
+    // Click the image thumbnail in chat
+    await browser.execute(() => {
+      const img = document.querySelector("img.rounded-xl") as HTMLElement;
+      img?.click();
+    });
+    await shortWait(2000);
+
+    // Verify lightbox overlay appeared (fixed inset-0 z-50 with dark background)
+    const hasLightbox = await browser.execute(() => {
+      const overlay = document.querySelector(".fixed.inset-0.z-50.bg-black\\/80");
+      return !!overlay;
+    });
+    expect(hasLightbox).toBe(true);
+
+    // Verify a full-size image is shown inside the lightbox
+    const hasFullImage = await browser.execute(() => {
+      const overlay = document.querySelector(".fixed.inset-0.z-50");
+      if (!overlay) return false;
+      const img = overlay.querySelector("img");
+      return !!img;
+    });
+    expect(hasFullImage).toBe(true);
+
+    // Close lightbox by clicking the close button
+    await browser.execute(() => {
+      const overlay = document.querySelector(".fixed.inset-0.z-50");
+      if (!overlay) return;
+      const closeBtn = overlay.querySelector("button");
+      closeBtn?.click();
+    });
+    await shortWait(500);
+
+    // Verify lightbox is closed
+    const lightboxGone = await browser.execute(() => {
+      return !document.querySelector(".fixed.inset-0.z-50.bg-black\\/80");
+    });
+    expect(lightboxGone).toBe(true);
+  });
+
+  it("19.6 should show timestamp below image", async () => {
     // Verify that image messages have timestamps
     const hasTimestamp = await browser.execute(() => {
       const imgs = document.querySelectorAll("img.rounded-xl");

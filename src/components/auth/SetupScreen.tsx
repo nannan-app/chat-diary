@@ -18,7 +18,7 @@ export default function SetupScreen() {
 
   const handleSetPassword = async () => {
     if (password.length === 0) {
-      setError("请输入密码");
+      setError(t("auth.setup.enterPassword"));
       return;
     }
     if (password !== confirmPassword) {
@@ -41,7 +41,7 @@ export default function SetupScreen() {
 
   const handleDownloadCode = () => {
     const blob = new Blob(
-      [`Murmur 恢复码 / Recovery Code\n\n${recoveryCode}\n\n请妥善保管此恢复码，用于密码重置。`],
+      [t("auth.setup.recoveryFileContent", { code: recoveryCode })],
       { type: "text/plain" }
     );
     const url = URL.createObjectURL(blob);
@@ -101,7 +101,7 @@ export default function SetupScreen() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="输入密码"
+                placeholder={t("auth.password.placeholder")}
                 autoFocus
                 className="px-4 py-2.5 rounded-xl bg-white border border-border
                            text-center text-text-primary placeholder:text-text-hint
@@ -126,7 +126,7 @@ export default function SetupScreen() {
                 className="py-2.5 rounded-xl bg-accent text-white font-medium
                            hover:bg-accent-hover active:scale-[0.98] transition-all"
               >
-                下一步
+                {t("auth.setup.next")}
               </button>
             </div>
           </>
@@ -145,7 +145,7 @@ export default function SetupScreen() {
                 type="text"
                 value={hint}
                 onChange={(e) => setHint(e.target.value)}
-                placeholder="例如：我的生日"
+                placeholder={t("auth.setup.hintPlaceholder")}
                 autoFocus
                 className="px-4 py-2.5 rounded-xl bg-white border border-border
                            text-center text-text-primary placeholder:text-text-hint
@@ -157,13 +157,13 @@ export default function SetupScreen() {
                 className="py-2.5 rounded-xl bg-accent text-white font-medium
                            hover:bg-accent-hover active:scale-[0.98] transition-all"
               >
-                完成设置
+                {t("auth.setup.finish")}
               </button>
               <button
                 onClick={handleSetHint}
                 className="text-xs text-text-hint hover:text-text-secondary transition-colors"
               >
-                跳过
+                {t("auth.setup.skip")}
               </button>
             </div>
           </>

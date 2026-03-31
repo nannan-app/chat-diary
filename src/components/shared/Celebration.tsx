@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import * as ipc from "../../lib/ipc";
 
 export default function Celebration() {
+  const { t } = useTranslation();
   const [celebration, setCelebration] = useState<{
     emoji: string;
     message: string;
@@ -18,25 +20,22 @@ export default function Celebration() {
     const shown = sessionStorage.getItem("celebration_shown_today");
     if (shown === today.format("YYYY-MM-DD")) return;
 
-    // Check new year
     if (today.month() === 0 && today.date() === 1) {
-      setCelebration({ emoji: "🎆", message: "新年快乐！新的一年，继续记录美好" });
+      setCelebration({ emoji: "🎆", message: t("celebration.newYear") });
       sessionStorage.setItem("celebration_shown_today", today.format("YYYY-MM-DD"));
       return;
     }
 
-    // Check birthday
     const birthday = await ipc.getSetting("birthday");
     if (birthday) {
       const bd = dayjs(birthday);
       if (bd.month() === today.month() && bd.date() === today.date()) {
-        setCelebration({ emoji: "🎂", message: "生日快乐，记录美好的一年！" });
+        setCelebration({ emoji: "🎂", message: t("celebration.birthday") });
         sessionStorage.setItem("celebration_shown_today", today.format("YYYY-MM-DD"));
         return;
       }
     }
 
-    // Check anniversary
     const stats = await ipc.getWritingStats();
     if (stats.first_entry_date) {
       const firstDay = dayjs(stats.first_entry_date);
@@ -45,7 +44,7 @@ export default function Celebration() {
         const years = diff / 365;
         setCelebration({
           emoji: "🎉",
-          message: `你已经和喃喃在一起整整 ${years} 年了！`,
+          message: t("celebration.anniversary", { years }),
         });
         sessionStorage.setItem("celebration_shown_today", today.format("YYYY-MM-DD"));
       }
@@ -85,7 +84,7 @@ export default function Celebration() {
               className="px-6 py-2 rounded-xl bg-accent text-white text-sm
                          hover:bg-accent-hover transition-colors"
             >
-              谢谢！
+              {t("celebration.thanks")}
             </button>
           </motion.div>
         </motion.div>

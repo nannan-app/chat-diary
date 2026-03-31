@@ -15,6 +15,7 @@ import LibraryView from "../library/LibraryView";
 import Celebration from "../shared/Celebration";
 import QuickCapture from "../shared/QuickCapture";
 import ArticleViewer from "../editor/ArticleViewer";
+import ImageLightbox from "../diary/ImageLightbox";
 
 export default function AppShell() {
   const activeNav = useUIStore((s) => s.activeNav);
@@ -128,6 +129,11 @@ export default function AppShell() {
 
       {/* Celebrations */}
       <Celebration />
+
+      {/* Image lightbox */}
+      <AnimatePresence>
+        <ImageLightbox />
+      </AnimatePresence>
 
       {/* Article viewer */}
       <AnimatePresence>

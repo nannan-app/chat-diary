@@ -19,16 +19,8 @@ export default function IconNavBar() {
   const { t } = useTranslation();
   const activeNav = useUIStore((s) => s.activeNav);
   const setActiveNav = useUIStore((s) => s.setActiveNav);
-  const { spaceType, canSwitchSpace, switchSpace } = useAuthStore();
+  const { spaceType, logout } = useAuthStore();
   const navItems = navItemDefs.map(n => ({ ...n, label: t(n.labelKey) }));
-  const loadToday = useDiaryStore((s) => s.loadToday);
-
-  const handleSwitchSpace = async () => {
-    if (!canSwitchSpace) return;
-    const target = spaceType === "private" ? "public" : "private";
-    await switchSpace(target);
-    await loadToday();
-  };
 
   return (
     <div className="w-14 bg-nav-bg flex flex-col items-center pt-4 pb-3 border-r border-border">
@@ -76,17 +68,17 @@ export default function IconNavBar() {
         </button>
       </div>
 
-      {/* Space indicator + switch */}
-      {canSwitchSpace && (
-        <button
-          onClick={handleSwitchSpace}
-          className="w-10 h-10 rounded-xl flex items-center justify-center
-                     text-xs hover:bg-warm-200/50 transition-colors mb-1"
-          title={spaceType === "private" ? "切换到公开空间" : "切换到私密空间"}
-        >
-          {spaceType === "private" ? <Lock className="w-4 h-4" /> : <LockOpen className="w-4 h-4" />}
-        </button>
-      )}
+      {/* Space indicator — click to lock */}
+      <button
+        onClick={logout}
+        className="w-10 h-10 rounded-xl flex items-center justify-center
+                   hover:bg-warm-200/50 transition-colors mb-1"
+        title={spaceType === "private" ? t("space.private") : t("space.public")}
+      >
+        {spaceType === "private"
+          ? <Lock className="w-4 h-4 text-accent" />
+          : <LockOpen className="w-4 h-4 text-orange-400" />}
+      </button>
 
       {/* Settings at bottom */}
       <button

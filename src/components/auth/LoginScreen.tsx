@@ -4,13 +4,14 @@ import { BookHeart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "../../stores/authStore";
 import { getPasswordHint, resetPasswordWithRecovery } from "../../lib/ipc";
-import { GREETINGS } from "../../lib/constants";
+import { getGreetings } from "../../lib/constants";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
+  const greetings = getGreetings();
   const [password, setPassword] = useState("");
   const [greeting] = useState(
-    () => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]
+    () => greetings[Math.floor(Math.random() * greetings.length)]
   );
   const [hint, setHint] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(false);
@@ -42,7 +43,6 @@ export default function LoginScreen() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="flex flex-col items-center gap-6"
       >
-        {/* Logo area */}
         <motion.div
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
@@ -52,7 +52,6 @@ export default function LoginScreen() {
           <BookHeart className="w-10 h-10" />
         </motion.div>
 
-        {/* App name */}
         <motion.h1
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -62,7 +61,6 @@ export default function LoginScreen() {
           {t("app.name")}
         </motion.h1>
 
-        {/* Greeting */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -72,7 +70,6 @@ export default function LoginScreen() {
           {greeting}
         </motion.p>
 
-        {/* Password form */}
         <motion.form
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -91,7 +88,6 @@ export default function LoginScreen() {
                        focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30
                        transition-all duration-200"
           />
-
           <button
             type="submit"
             className="w-64 py-2.5 rounded-xl bg-accent text-white font-medium
@@ -102,7 +98,6 @@ export default function LoginScreen() {
           </button>
         </motion.form>
 
-        {/* Hint and forgot password */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -117,7 +112,6 @@ export default function LoginScreen() {
               {t("auth.hint")}
             </button>
           )}
-
           <AnimatePresence>
             {showHint && hint && (
               <motion.p
@@ -130,7 +124,6 @@ export default function LoginScreen() {
               </motion.p>
             )}
           </AnimatePresence>
-
           <button
             onClick={() => setShowForgot(true)}
             className="text-xs text-text-hint hover:text-accent transition-colors mt-1"
@@ -145,34 +138,34 @@ export default function LoginScreen() {
           <div className="bg-white rounded-2xl p-6 w-96 shadow-xl">
             {!resetSuccess ? (
               <>
-                <h3 className="text-lg font-medium mb-4">重置密码</h3>
+                <h3 className="text-lg font-medium mb-4">{t("auth.reset.title")}</h3>
                 <div className="space-y-3">
                   <input
                     type="text"
                     value={recoveryCode}
                     onChange={(e) => setRecoveryCode(e.target.value)}
-                    placeholder="输入恢复码 (XXXX-XXXX-XXXX-XXXX-XXXX)"
+                    placeholder={t("auth.reset.codePlaceholder")}
                     className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:border-accent"
                   />
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="新密码"
+                    placeholder={t("auth.reset.newPassword")}
                     className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:border-accent"
                   />
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="确认新密码"
+                    placeholder={t("auth.reset.confirmPassword")}
                     className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:border-accent"
                   />
                   <input
                     type="text"
                     value={newHint}
                     onChange={(e) => setNewHint(e.target.value)}
-                    placeholder="密码提示（可选）"
+                    placeholder={t("auth.reset.hintPlaceholder")}
                     className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:border-accent"
                   />
                   {resetError && <p className="text-red-400 text-xs">{resetError}</p>}
@@ -181,16 +174,16 @@ export default function LoginScreen() {
                       onClick={() => setShowForgot(false)}
                       className="flex-1 py-2 rounded-lg border border-border text-sm hover:bg-warm-100"
                     >
-                      取消
+                      {t("auth.reset.cancel")}
                     </button>
                     <button
                       onClick={async () => {
                         if (newPassword !== confirmPassword) {
-                          setResetError("两次密码不一致");
+                          setResetError(t("auth.reset.mismatch"));
                           return;
                         }
                         if (!recoveryCode.trim() || !newPassword.trim()) {
-                          setResetError("请填写恢复码和新密码");
+                          setResetError(t("auth.reset.fillRequired"));
                           return;
                         }
                         try {
@@ -200,20 +193,20 @@ export default function LoginScreen() {
                           setNewRecoveryCode(resp.recovery_code);
                           setResetSuccess(true);
                         } catch (e: any) {
-                          setResetError("恢复码验证失败，请检查后重试");
+                          setResetError(t("auth.reset.failed"));
                         }
                       }}
                       className="flex-1 py-2 rounded-lg bg-accent text-white text-sm hover:bg-accent-hover"
                     >
-                      重置密码
+                      {t("auth.reset.submit")}
                     </button>
                   </div>
                 </div>
               </>
             ) : (
               <>
-                <h3 className="text-lg font-medium mb-4">密码重置成功</h3>
-                <p className="text-sm text-text-secondary mb-3">请保存新的恢复码：</p>
+                <h3 className="text-lg font-medium mb-4">{t("auth.reset.success")}</h3>
+                <p className="text-sm text-text-secondary mb-3">{t("auth.reset.saveCode")}</p>
                 <div className="bg-warm-100 p-3 rounded-lg font-mono text-center text-sm mb-4 select-all">
                   {newRecoveryCode}
                 </div>
@@ -225,7 +218,7 @@ export default function LoginScreen() {
                   }}
                   className="w-full py-2 rounded-lg bg-accent text-white text-sm hover:bg-accent-hover"
                 >
-                  前往登录
+                  {t("auth.reset.goLogin")}
                 </button>
               </>
             )}

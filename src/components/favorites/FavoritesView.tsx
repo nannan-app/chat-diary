@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { FileText, MessageCircle, Star as StarIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
@@ -8,6 +9,7 @@ import { useDiaryStore } from "../../stores/diaryStore";
 import { useUIStore } from "../../stores/uiStore";
 
 export default function FavoritesView() {
+  const { t } = useTranslation();
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [selected, setSelected] = useState<Favorite | null>(null);
   const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
@@ -33,7 +35,7 @@ export default function FavoritesView() {
       <div className="h-full flex items-center justify-center text-text-hint">
         <div className="text-center">
           <StarIcon className="w-10 h-10 mb-3" />
-          <p>收藏你珍视的每一段文字</p>
+          <p>{t("empty.favorites")}</p>
         </div>
       </div>
     );
@@ -41,7 +43,6 @@ export default function FavoritesView() {
 
   return (
     <div className="h-full flex">
-      {/* List */}
       <div className="w-64 border-r border-border bg-sidebar-bg overflow-y-auto">
         {favorites.map((fav) => (
           <motion.button
@@ -54,7 +55,7 @@ export default function FavoritesView() {
             <div className="flex items-center gap-1.5">
               {fav.article_id ? <FileText className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
               <span className="text-xs text-text-hint">
-                {dayjs(fav.source_date).format("M月D日")}
+                {dayjs(fav.source_date).format(t("diary.monthDayFormat"))}
               </span>
             </div>
             <p className="text-sm text-text-primary mt-0.5 truncate">
@@ -64,26 +65,25 @@ export default function FavoritesView() {
         ))}
       </div>
 
-      {/* Detail */}
       <div className="flex-1 p-6">
         {selected ? (
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs text-text-hint">
-                来自 {dayjs(selected.source_date).format("YYYY年M月D日")} 的日记
+                {t("favorites.fromDiary", { date: dayjs(selected.source_date).format(t("diary.dateFormat")) })}
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleJumpToDate(selected.source_date)}
                   className="text-xs text-accent hover:text-accent-hover"
                 >
-                  跳转到日记
+                  {t("favorites.jumpToDiary")}
                 </button>
                 <button
                   onClick={() => handleRemove(selected.id)}
                   className="text-xs text-red-400 hover:text-red-500"
                 >
-                  取消收藏
+                  {t("favorites.remove")}
                 </button>
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function FavoritesView() {
           </div>
         ) : (
           <div className="h-full flex items-center justify-center text-text-hint text-sm">
-            选择一条收藏查看详情
+            {t("favorites.selectToView")}
           </div>
         )}
       </div>

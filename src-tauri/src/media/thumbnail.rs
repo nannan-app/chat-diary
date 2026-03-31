@@ -12,9 +12,11 @@ pub fn generate(image_bytes: &[u8]) -> Result<(Vec<u8>, u32, u32), MurmurError> 
 
     let (width, height) = img.dimensions();
     let thumbnail = img.thumbnail(THUMBNAIL_MAX_SIZE, THUMBNAIL_MAX_SIZE);
+    // Convert to RGB (strip alpha) since JPEG doesn't support transparency
+    let thumbnail_rgb = image::DynamicImage::ImageRgb8(thumbnail.to_rgb8());
 
     let mut buf = Cursor::new(Vec::new());
-    thumbnail
+    thumbnail_rgb
         .write_to(&mut buf, image::ImageFormat::Jpeg)
         .map_err(|e| MurmurError::Image(format!("Failed to encode thumbnail: {}", e)))?;
 

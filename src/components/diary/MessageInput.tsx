@@ -6,7 +6,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { useDiaryStore } from "../../stores/diaryStore";
 import { useUIStore } from "../../stores/uiStore";
-import { MOODS } from "../../lib/constants";
+import { getMoods } from "../../lib/constants";
 import TagPanel from "./TagPanel";
 import MarkdownEditor from "../editor/MarkdownEditor";
 import * as ipc from "../../lib/ipc";
@@ -101,6 +101,8 @@ export default function MessageInput() {
     }
   };
 
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const handleImageUpload = async () => {
     try {
       const selected = await open({
@@ -110,8 +112,16 @@ export default function MessageInput() {
       if (!selected) return;
       const bytes = await readFile(selected);
       await uploadImageFn(bytes, !useOriginal);
-    } catch (e) {
+      setUploadError(null);
+    } catch (e: any) {
       console.log("Image upload error:", e);
+      const errStr = String(e);
+      if (errStr.includes("decode") || errStr.includes("image") || errStr.includes("Image")) {
+        setUploadError(t("upload.formatError"));
+      } else {
+        setUploadError(t("upload.failed") + ": " + errStr);
+      }
+      setTimeout(() => setUploadError(null), 5000);
     }
   };
 
@@ -156,7 +166,7 @@ export default function MessageInput() {
       {/* Resize handle */}
       <div
         onMouseDown={handleResizeStart}
-        className="h-1.5 cursor-ns-resize flex items-center justify-center hover:bg-warm-100 transition-colors group"
+        className="h-1.5 cursor-ns-resize flex items-center justify-center hover:bg-warm-100 transition-colors group mb-[-8px]"
       >
         <div className="w-8 h-0.5 rounded-full bg-border group-hover:bg-text-hint transition-colors" />
       </div>
@@ -194,7 +204,7 @@ export default function MessageInput() {
             className="px-4 pt-2"
           >
             <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-1.5">
-              <span className="text-xs text-accent">正在编辑</span>
+              <span className="text-xs text-accent">{t("diary.editing")}</span>
               <button
                 onClick={() => {
                   setEditingMessage(null);
@@ -202,7 +212,7 @@ export default function MessageInput() {
                 }}
                 className="text-text-hint hover:text-text-secondary text-sm ml-auto"
               >
-                取消
+                {t("common.cancel")}
               </button>
             </div>
           </motion.div>
@@ -214,41 +224,41 @@ export default function MessageInput() {
         <button
           onClick={handleImageUpload}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title="插入图片"
+          title={t("toolbar.image")}
         >
           <Camera className="w-4 h-4" />
         </button>
         <button
           onClick={() => setShowMoodPanel(!showMoodPanel)}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title="心情"
+          title={t("toolbar.mood")}
         >
           <SmilePlus className="w-4 h-4" />
         </button>
         <button
           onClick={handleAiSummarize}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title="AI 总结与反馈"
+          title={t("toolbar.ai")}
         >
           <Bot className="w-4 h-4" />
         </button>
         <button
           onClick={() => { setShowTagPanel(!showTagPanel); setShowMoodPanel(false); }}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title="标签"
+          title={t("toolbar.tag")}
         >
           <Tag className="w-4 h-4" />
         </button>
         <button
           onClick={() => setShowEditor(true)}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title="长文"
+          title={t("toolbar.article")}
         >
           <PenLine className="w-4 h-4" />
         </button>
 
         <div className="flex-1" />
-        <span className="text-xs text-text-hint">{wordCount} 字</span>
+        <span className="text-xs text-text-hint">{wordCount} {t("diary.words")}</span>
       </div>
 
       {/* Mood panel */}
@@ -261,7 +271,7 @@ export default function MessageInput() {
             className="px-3 py-2"
           >
             <div className="flex flex-wrap gap-2">
-              {MOODS.map((m) => (
+              {getMoods().map((m) => (
                 <motion.button
                   key={m.emoji}
                   whileHover={{ scale: 1.15 }}
@@ -273,6 +283,22 @@ export default function MessageInput() {
                   <span className="text-xs text-text-hint">{m.label}</span>
                 </motion.button>
               ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Upload error toast */}
+      <AnimatePresence>
+        {uploadError && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="px-3 py-1.5"
+          >
+            <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2">
+              {uploadError}
             </div>
           </motion.div>
         )}

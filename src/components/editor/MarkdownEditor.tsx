@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -12,13 +13,14 @@ interface Props {
 }
 
 export default function MarkdownEditor({ onSave, onCancel, initialTitle, initialContent }: Props) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(initialTitle || "");
 
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: "开始写作...",
+        placeholder: t("editor.startWriting"),
       }),
     ],
     content: initialContent || "",
@@ -50,109 +52,59 @@ export default function MarkdownEditor({ onSave, onCancel, initialTitle, initial
         exit={{ scale: 0.95, y: 20 }}
         className="w-[720px] h-[560px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <button
               onClick={onCancel}
               className="text-text-hint hover:text-text-secondary text-sm"
             >
-              取消
+              {t("editor.cancel")}
             </button>
           </div>
-          <span className="text-xs text-text-hint">{wordCount} 字</span>
+          <span className="text-xs text-text-hint">{wordCount} {t("diary.words")}</span>
           <button
             onClick={handleSave}
             disabled={!title.trim()}
             className="px-4 py-1 rounded-lg bg-accent text-white text-sm
                        disabled:opacity-50 hover:bg-accent-hover transition-colors"
           >
-            完成
+            {t("editor.done")}
           </button>
         </div>
 
-        {/* Title */}
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="标题"
+          placeholder={t("editor.titlePlaceholder")}
           className="px-4 py-3 text-xl font-medium text-text-primary
                      placeholder:text-text-hint focus:outline-none border-b border-border/50"
         />
 
-        {/* Editor */}
         <div className="flex-1 overflow-y-auto">
           <EditorContent editor={editor} />
         </div>
 
-        {/* Toolbar */}
         <div className="flex items-center gap-1 px-3 py-2 border-t border-border">
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-            active={editor?.isActive("bold")}
-            label="B"
-            title="粗体"
-          />
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleItalic().run()}
-            active={editor?.isActive("italic")}
-            label="I"
-            title="斜体"
-          />
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-            active={editor?.isActive("heading", { level: 2 })}
-            label="H"
-            title="标题"
-          />
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleBulletList().run()}
-            active={editor?.isActive("bulletList")}
-            label="•"
-            title="列表"
-          />
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-            active={editor?.isActive("orderedList")}
-            label="1."
-            title="有序列表"
-          />
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-            active={editor?.isActive("blockquote")}
-            label='"'
-            title="引用"
-          />
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
-            active={editor?.isActive("codeBlock")}
-            label="<>"
-            title="代码块"
-          />
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive("bold")} label="B" title={t("editor.bold")} />
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive("italic")} label="I" title={t("editor.italic")} />
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive("heading", { level: 2 })} label="H" title={t("editor.heading")} />
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive("bulletList")} label="•" title={t("editor.bulletList")} />
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive("orderedList")} label="1." title={t("editor.orderedList")} />
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive("blockquote")} label='"' title={t("editor.blockquote")} />
+          <ToolbarButton onClick={() => editor?.chain().focus().toggleCodeBlock().run()} active={editor?.isActive("codeBlock")} label="<>" title={t("editor.codeBlock")} />
         </div>
       </motion.div>
     </motion.div>
   );
 }
 
-function ToolbarButton({
-  onClick,
-  active,
-  label,
-  title,
-}: {
-  onClick: () => void;
-  active?: boolean;
-  label: string;
-  title: string;
-}) {
+function ToolbarButton({ onClick, active, label, title }: { onClick: () => void; active?: boolean; label: string; title: string }) {
   return (
     <button
       onClick={onClick}
       title={title}
-      className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium
-                  transition-colors
+      className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium transition-colors
         ${active ? "bg-accent/10 text-accent" : "text-text-secondary hover:bg-warm-100"}`}
     >
       {label}

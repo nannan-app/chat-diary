@@ -95,70 +95,70 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
 
           {activeSection === "account" && (
             <div className="space-y-4">
-              <SettingItem label="修改密码">
+              <SettingItem label={t("settings.changePassword")}>
                 <button onClick={() => { setShowChangePassword(!showChangePassword); setAccountError(""); setAccountSuccess(""); }} className="text-sm text-accent hover:text-accent-hover">
-                  {showChangePassword ? "取消" : "修改"}
+                  {showChangePassword ? t("settings.cancel") : t("settings.modify")}
                 </button>
               </SettingItem>
               {showChangePassword && (
                 <div className="space-y-2 pl-2">
-                  <input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder="旧密码" className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
-                  <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="新密码" className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
-                  <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="确认新密码" className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
+                  <input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder={t("settings.oldPassword")} className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
+                  <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder={t("settings.newPassword")} className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
+                  <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder={t("settings.confirmPassword")} className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
                   {accountError && <p className="text-xs text-red-400">{accountError}</p>}
                   {accountSuccess && <p className="text-xs text-green-500">{accountSuccess}</p>}
                   <button onClick={async () => {
-                    if (newPw !== confirmPw) { setAccountError("两次密码不一致"); return; }
+                    if (newPw !== confirmPw) { setAccountError(t("settings.passwordMismatch")); return; }
                     try {
                       await ipc.changePassword(oldPw, newPw);
-                      setAccountSuccess("密码修改成功");
+                      setAccountSuccess(t("settings.passwordChanged"));
                       setOldPw(""); setNewPw(""); setConfirmPw("");
                       setTimeout(() => setShowChangePassword(false), 1500);
-                    } catch { setAccountError("旧密码验证失败"); }
-                  }} className="text-sm bg-accent text-white px-3 py-1 rounded-lg hover:bg-accent-hover">确认修改</button>
+                    } catch { setAccountError(t("settings.passwordFailed")); }
+                  }} className="text-sm bg-accent text-white px-3 py-1 rounded-lg hover:bg-accent-hover">{t("settings.confirmChange")}</button>
                 </div>
               )}
 
-              <SettingItem label="密码提示语">
+              <SettingItem label={t("settings.passwordHint")}>
                 <button onClick={() => { setShowChangeHint(!showChangeHint); setAccountError(""); setAccountSuccess(""); }} className="text-sm text-accent hover:text-accent-hover">
-                  {showChangeHint ? "取消" : "修改"}
+                  {showChangeHint ? t("settings.cancel") : t("settings.modify")}
                 </button>
               </SettingItem>
               {showChangeHint && (
                 <div className="space-y-2 pl-2">
-                  <input type="text" value={hintText} onChange={e => setHintText(e.target.value)} placeholder="新的密码提示语" className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
+                  <input type="text" value={hintText} onChange={e => setHintText(e.target.value)} placeholder={t("settings.newHintPlaceholder")} className="w-full text-sm border border-border rounded-lg px-2 py-1.5" />
                   {accountSuccess && <p className="text-xs text-green-500">{accountSuccess}</p>}
                   <button onClick={async () => {
                     await ipc.updatePasswordHint(hintText || undefined);
-                    setAccountSuccess("提示语已更新");
+                    setAccountSuccess(t("settings.hintUpdated"));
                     setTimeout(() => setShowChangeHint(false), 1500);
-                  }} className="text-sm bg-accent text-white px-3 py-1 rounded-lg hover:bg-accent-hover">保存</button>
+                  }} className="text-sm bg-accent text-white px-3 py-1 rounded-lg hover:bg-accent-hover">{t("settings.save")}</button>
                 </div>
               )}
 
-              <SettingItem label="恢复码">
+              <SettingItem label={t("settings.recoveryCode")}>
                 <button onClick={async () => {
                   if (!showRecoveryCode) {
                     try {
                       const code = await ipc.regenerateRecoveryCode();
                       setRecoveryCode(code);
                       setShowRecoveryCode(true);
-                    } catch { setAccountError("无法生成恢复码"); }
+                    } catch { setAccountError(t("settings.recoveryFailed")); }
                   } else {
                     setShowRecoveryCode(false);
                   }
                 }} className="text-sm text-accent hover:text-accent-hover">
-                  {showRecoveryCode ? "隐藏" : "重新生成"}
+                  {showRecoveryCode ? t("settings.hide") : t("settings.regenerate")}
                 </button>
               </SettingItem>
               {showRecoveryCode && (
                 <div className="pl-2">
                   <div className="bg-warm-100 p-2 rounded-lg font-mono text-sm text-center select-all">{recoveryCode}</div>
-                  <p className="text-xs text-text-hint mt-1">请妥善保存，旧恢复码已失效</p>
+                  <p className="text-xs text-text-hint mt-1">{t("settings.recoverySaveNote")}</p>
                 </div>
               )}
 
-              <SettingItem label="生日">
+              <SettingItem label={t("settings.birthday")}>
                 <input type="date" value={settings.birthday || ""} onChange={(e) => updateSetting("birthday", e.target.value)} className="text-sm border border-border rounded-lg px-2 py-1" />
               </SettingItem>
             </div>
@@ -166,16 +166,16 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
 
           {activeSection === "ai" && (
             <div className="space-y-4">
-              <SettingItem label="AI Provider">
+              <SettingItem label={t("settings.aiProvider")}>
                 <select
                   value={settings.ai_provider || "builtin"}
                   onChange={(e) => updateSetting("ai_provider", e.target.value)}
                   className="text-sm border border-border rounded-lg px-2 py-1"
                 >
-                  <option value="builtin">内置 (MiniMax)</option>
+                  <option value="builtin">{t("settings.aiBuiltin")}</option>
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
-                  <option value="custom">自定义</option>
+                  <option value="custom">{t("settings.aiCustom")}</option>
                 </select>
               </SettingItem>
               {settings.ai_provider && settings.ai_provider !== "builtin" && (
@@ -189,9 +189,9 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   />
                 </SettingItem>
               )}
-              <SettingItem label="AI 性格">
+              <SettingItem label={t("settings.aiPersonality")}>
                 <textarea
-                  value={settings.ai_personality || "你是一个温暖的朋友，善于倾听和给出温暖的反馈。"}
+                  value={settings.ai_personality || t("settings.aiDefaultPersonality")}
                   onChange={(e) => updateSetting("ai_personality", e.target.value)}
                   className="text-sm border border-border rounded-lg px-2 py-1 w-64 h-20 resize-none"
                 />
@@ -201,36 +201,36 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
 
           {activeSection === "writing" && (
             <div className="space-y-4">
-              <SettingItem label="发送方式">
+              <SettingItem label={t("settings.sendMode")}>
                 <select
                   value={settings.send_mode || "enter"}
                   onChange={(e) => updateSetting("send_mode", e.target.value)}
                   className="text-sm border border-border rounded-lg px-2 py-1"
                 >
-                  <option value="enter">Enter 发送</option>
-                  <option value="ctrl_enter">Ctrl+Enter 发送</option>
+                  <option value="enter">{t("settings.sendEnter")}</option>
+                  <option value="ctrl_enter">{t("settings.sendCtrlEnter")}</option>
                 </select>
               </SettingItem>
-              <SettingItem label="每日写作引导">
+              <SettingItem label={t("settings.dailyPrompt")}>
                 <ToggleSwitch
                   checked={settings.daily_prompt !== "false"}
                   onChange={(v) => updateSetting("daily_prompt", v ? "true" : "false")}
                 />
               </SettingItem>
-              <SettingItem label="图片默认压缩">
+              <SettingItem label={t("settings.imageCompress")}>
                 <ToggleSwitch
                   checked={settings.image_compress !== "false"}
                   onChange={(v) => updateSetting("image_compress", v ? "true" : "false")}
                 />
               </SettingItem>
-              <SettingItem label="定时提醒">
+              <SettingItem label={t("settings.reminder")}>
                 <ToggleSwitch
                   checked={settings.reminder_enabled === "true"}
                   onChange={(v) => updateSetting("reminder_enabled", v ? "true" : "false")}
                 />
               </SettingItem>
               {settings.reminder_enabled === "true" && (
-                <SettingItem label="提醒时间">
+                <SettingItem label={t("settings.reminderTime")}>
                   <input
                     type="time"
                     value={settings.reminder_time || "21:00"}
@@ -244,7 +244,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
 
           {activeSection === "display" && (
             <div className="space-y-4">
-              <SettingItem label="字体大小">
+              <SettingItem label={t("settings.fontSize")}>
                 <select
                   value={settings.font_size || "14"}
                   onChange={(e) => {
@@ -253,25 +253,25 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   }}
                   className="text-sm border border-border rounded-lg px-2 py-1"
                 >
-                  <option value="12">小</option>
-                  <option value="14">默认</option>
-                  <option value="16">大</option>
-                  <option value="18">超大</option>
+                  <option value="12">{t("settings.fontSmall")}</option>
+                  <option value="14">{t("settings.fontDefault")}</option>
+                  <option value="16">{t("settings.fontLarge")}</option>
+                  <option value="18">{t("settings.fontXLarge")}</option>
                 </select>
               </SettingItem>
-              <SettingItem label="时间氛围背景">
+              <SettingItem label={t("settings.ambientBg")}>
                 <ToggleSwitch
                   checked={settings.ambient_bg !== "false"}
                   onChange={(v) => updateSetting("ambient_bg", v ? "true" : "false")}
                 />
               </SettingItem>
-              <SettingItem label="季节粒子动效">
+              <SettingItem label={t("settings.seasonalParticles")}>
                 <ToggleSwitch
                   checked={settings.seasonal_particles !== "false"}
                   onChange={(v) => updateSetting("seasonal_particles", v ? "true" : "false")}
                 />
               </SettingItem>
-              <SettingItem label="语言">
+              <SettingItem label={t("settings.language")}>
                 <select
                   value={settings.language || "auto"}
                   onChange={async (e) => {
@@ -287,8 +287,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   }}
                   className="text-sm border border-border rounded-lg px-2 py-1"
                 >
-                  <option value="auto">跟随系统</option>
-                  <option value="zh">中文</option>
+                  <option value="auto">{t("settings.langAuto")}</option>
+                  <option value="zh">{t("settings.langChinese")}</option>
                   <option value="en">English</option>
                 </select>
               </SettingItem>
@@ -297,61 +297,60 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
 
           {activeSection === "data" && (
             <div className="space-y-4">
-              <SettingItem label="导出数据库">
+              <SettingItem label={t("settings.exportDb")}>
                 <button onClick={async () => {
                   const { save, message: showMessage } = await import("@tauri-apps/plugin-dialog");
                   const path = await save({ defaultPath: "murmur-backup.zip", filters: [{ name: "ZIP", extensions: ["zip"] }] });
                   if (path) {
                     try {
                       await ipc.exportDatabase(path);
-                      await showMessage("导出成功！", { title: "完成" });
+                      await showMessage(t("settings.exportSuccess"), { title: t("settings.done") });
                     } catch (e: any) {
-                      await showMessage("导出失败：" + e, { title: "错误", kind: "error" });
+                      await showMessage(t("settings.exportFailed") + e, { title: t("settings.error"), kind: "error" });
                     }
                   }
                 }} className="text-sm text-accent hover:text-accent-hover">
-                  导出
+                  {t("settings.export")}
                 </button>
               </SettingItem>
-              <SettingItem label="导入数据库">
+              <SettingItem label={t("settings.importDb")}>
                 <button onClick={async () => {
                   const { open, message: showMessage } = await import("@tauri-apps/plugin-dialog");
                   const path = await open({ filters: [{ name: "ZIP", extensions: ["zip"] }] });
                   if (path) {
-                    // Use a simple input dialog approach - prompt is not available in Tauri
-                    const password = window.prompt("请输入备份文件的密码：");
+                    const password = window.prompt(t("settings.importPasswordPrompt"));
                     if (password) {
                       try {
                         await ipc.importDatabase(path as string, password);
-                        await showMessage("导入成功！请重新启动应用。", { title: "完成" });
+                        await showMessage(t("settings.importSuccess"), { title: t("settings.done") });
                         window.location.reload();
                       } catch (e: any) {
-                        await showMessage("导入失败：" + e, { title: "错误", kind: "error" });
+                        await showMessage(t("settings.importFailed") + e, { title: t("settings.error"), kind: "error" });
                       }
                     }
                   }
                 }} className="text-sm text-accent hover:text-accent-hover">
-                  导入
+                  {t("settings.import")}
                 </button>
               </SettingItem>
-              <SettingItem label="删除所有数据">
+              <SettingItem label={t("settings.deleteAll")}>
                 <button onClick={async () => {
                   const { ask, message: showMessage } = await import("@tauri-apps/plugin-dialog");
-                  const confirmed = await ask("确定要删除所有数据吗？此操作不可恢复！", { title: "删除确认", kind: "warning" });
+                  const confirmed = await ask(t("settings.deleteConfirm"), { title: t("settings.deleteConfirmTitle"), kind: "warning" });
                   if (confirmed) {
-                    const doubleConfirm = await ask("再次确认：所有日记、图片、设置都将被永久删除。确定吗？", { title: "最终确认", kind: "warning" });
+                    const doubleConfirm = await ask(t("settings.deleteFinal"), { title: t("settings.deleteFinalTitle"), kind: "warning" });
                     if (doubleConfirm) {
                       try {
                         await ipc.deleteAllData();
-                        await showMessage("所有数据已删除。", { title: "完成" });
+                        await showMessage(t("settings.deleteSuccess"), { title: t("settings.done") });
                         window.location.reload();
                       } catch (e: any) {
-                        await showMessage("删除失败：" + e, { title: "错误", kind: "error" });
+                        await showMessage(t("settings.deleteFailed") + e, { title: t("settings.error"), kind: "error" });
                       }
                     }
                   }
                 }} className="text-sm text-red-400 hover:text-red-500">
-                  删除
+                  {t("settings.delete")}
                 </button>
               </SettingItem>
             </div>
@@ -359,17 +358,17 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
 
           {activeSection === "about" && (
             <div className="space-y-4">
-              <SettingItem label="版本">
+              <SettingItem label={t("settings.version")}>
                 <span className="text-sm text-text-secondary">0.1.0</span>
               </SettingItem>
-              <SettingItem label="检查更新">
+              <SettingItem label={t("settings.checkUpdate")}>
                 <button className="text-sm text-accent hover:text-accent-hover">
-                  检查
+                  {t("settings.check")}
                 </button>
               </SettingItem>
               <div className="mt-6 text-center text-text-hint text-xs">
-                <p>喃喃 · Murmur</p>
-                <p className="mt-1">用聊天的方式，记录每一天</p>
+                <p>{t("settings.appName")}</p>
+                <p className="mt-1">{t("settings.tagline")}</p>
               </div>
             </div>
           )}

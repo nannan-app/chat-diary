@@ -1,3 +1,25 @@
+import i18n from "./i18n";
+
+export const getGreetings = () =>
+  Array.from({ length: 8 }, (_, i) => i18n.t(`greeting.${i}`));
+
+export const getDailyPrompts = () =>
+  Array.from({ length: 10 }, (_, i) => i18n.t(`prompt.${i}`));
+
+export const getMoods = () => [
+  { emoji: "😊", label: i18n.t("mood.happy") },
+  { emoji: "😌", label: i18n.t("mood.calm") },
+  { emoji: "😢", label: i18n.t("mood.sad") },
+  { emoji: "😤", label: i18n.t("mood.angry") },
+  { emoji: "😰", label: i18n.t("mood.anxious") },
+  { emoji: "😴", label: i18n.t("mood.tired") },
+  { emoji: "🥰", label: i18n.t("mood.love") },
+  { emoji: "🤔", label: i18n.t("mood.thinking") },
+  { emoji: "😮", label: i18n.t("mood.surprised") },
+  { emoji: "😎", label: i18n.t("mood.confident") },
+];
+
+// Keep static arrays for backward compatibility where i18n isn't needed
 export const GREETINGS = [
   "又见面了 ✨",
   "今天过得怎么样？",

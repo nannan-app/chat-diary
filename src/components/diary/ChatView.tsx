@@ -1,29 +1,38 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import { useDiaryStore } from "../../stores/diaryStore";
+import { useUIStore } from "../../stores/uiStore";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
 import ImageDropZone from "../shared/ImageDropZone";
 import SeasonalParticles from "../shared/SeasonalParticles";
-import { DAILY_PROMPTS } from "../../lib/constants";
+import { getDailyPrompts } from "../../lib/constants";
 
 export default function ChatView() {
+  const { t } = useTranslation();
   const messages = useDiaryStore((s) => s.messages);
   const selectedDate = useDiaryStore((s) => s.selectedDate);
   const loading = useDiaryStore((s) => s.loading);
+  const secondaryPanelVisible = useUIStore((s) => s.secondaryPanelVisible);
+  const toggleSecondaryPanel = useUIStore((s) => s.toggleSecondaryPanel);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom on new messages or date change
+  const prevDate = useRef(selectedDate);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+    if (!loading && messages.length > 0) {
+      const dateChanged = prevDate.current !== selectedDate;
+      prevDate.current = selectedDate;
+      bottomRef.current?.scrollIntoView({ behavior: dateChanged ? "instant" : "smooth" });
+    }
+  }, [messages.length, selectedDate, loading]);
 
   const isToday = selectedDate === dayjs().format("YYYY-MM-DD");
-  const dailyPrompt =
-    DAILY_PROMPTS[
-      new Date(selectedDate).getDate() % DAILY_PROMPTS.length
-    ];
+  const prompts = getDailyPrompts();
+  const dailyPrompt = prompts[new Date(selectedDate).getDate() % prompts.length];
 
   // Get time-of-day ambient class
   const hour = new Date().getHours();
@@ -38,17 +47,26 @@ export default function ChatView() {
     <div className={`h-full flex flex-col ${ambientClass} relative`}>
       <SeasonalParticles />
       {/* Date header */}
-      <div className="px-4 py-2 text-center border-b border-border/50">
-        <span className="text-xs text-text-hint">
-          {dayjs(selectedDate).format("YYYY年M月D日 dddd")}
+      <div className="px-4 py-2 flex items-center border-b border-border/50">
+        <button
+          onClick={toggleSecondaryPanel}
+          className="p-1 rounded-lg hover:bg-warm-100 transition-colors text-text-hint"
+        >
+          {secondaryPanelVisible
+            ? <PanelLeftClose className="w-4 h-4" />
+            : <PanelLeftOpen className="w-4 h-4" />}
+        </button>
+        <span className="flex-1 text-center text-xs text-text-hint">
+          {dayjs(selectedDate).format(t("diary.dateFormat"))}
         </span>
+        <div className="w-6" />
       </div>
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto py-3">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-text-hint text-sm">加载中...</span>
+            <span className="text-text-hint text-sm">{t("app.loading")}</span>
           </div>
         ) : messages.length === 0 ? (
           <motion.div

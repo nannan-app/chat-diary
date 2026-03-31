@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { FileText, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function SearchResults({ results, query, onClose }: Props) {
+  const { t } = useTranslation();
   const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
 
   const handleClick = (result: SearchResult) => {
@@ -21,7 +23,7 @@ export default function SearchResults({ results, query, onClose }: Props) {
   if (results.length === 0) {
     return (
       <div className="px-3 py-8 text-center">
-        <p className="text-text-hint text-sm">没有找到 "{query}" 的结果</p>
+        <p className="text-text-hint text-sm">{t("search.noResults", { query })}</p>
       </div>
     );
   }
@@ -29,7 +31,7 @@ export default function SearchResults({ results, query, onClose }: Props) {
   return (
     <div className="flex-1 overflow-y-auto px-2">
       <p className="px-2 py-1 text-xs text-text-hint">
-        找到 {results.length} 条结果
+        {t("search.resultCount", { count: results.length })}
       </p>
       {results.map((result, i) => (
         <motion.button
@@ -43,7 +45,7 @@ export default function SearchResults({ results, query, onClose }: Props) {
           <div className="flex items-center gap-1.5">
             {result.kind === "article" ? <FileText className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
             <span className="text-xs text-text-hint">
-              {dayjs(result.diary_date).format("M月D日")}
+              {dayjs(result.diary_date).format(t("diary.monthDayFormat"))}
             </span>
           </div>
           <p className="text-sm text-text-primary mt-0.5 truncate">

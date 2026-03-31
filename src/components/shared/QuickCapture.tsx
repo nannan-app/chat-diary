@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDiaryStore } from "../../stores/diaryStore";
 
 export default function QuickCapture() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,7 +67,7 @@ export default function QuickCapture() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="快速记录..."
+                placeholder={t("quickCapture.placeholder")}
                 className="flex-1 text-sm text-text-primary placeholder:text-text-hint
                            focus:outline-none bg-transparent"
               />
@@ -74,12 +76,12 @@ export default function QuickCapture() {
                 disabled={!text.trim()}
                 className="text-accent text-sm disabled:text-text-hint"
               >
-                记录
+                {t("quickCapture.send")}
               </button>
             </div>
             <div className="px-4 pb-2">
               <p className="text-xs text-text-hint">
-                按 Enter 记录到今天的日记，Esc 关闭
+                {t("quickCapture.hint")}
               </p>
             </div>
           </motion.div>
