@@ -6,6 +6,7 @@ import { FileText, ChevronDown, ChevronRight, Brain } from "lucide-react";
 import type { Message } from "../../lib/types";
 import { useUIStore } from "../../stores/uiStore";
 import { SOURCE_ICONS } from "../../lib/constants";
+import aiAvatar from "../../assets/icons/badges/ai_first.png";
 
 interface Props {
   message: Message;
@@ -179,7 +180,9 @@ export default function MessageBubble({ message }: Props) {
         data-message-id={message.id}
         onContextMenu={handleContextMenu}
       >
-        <div className="max-w-[70%] items-start flex flex-col">
+        <div className="flex gap-2 max-w-[75%]">
+        <img src={aiAvatar} alt="AI" className="w-7 h-7 rounded-full flex-shrink-0 mt-1" />
+        <div className="items-start flex flex-col flex-1 min-w-0">
           {quoteBlock}
           <div className="bg-white text-text-primary rounded-2xl rounded-tl-md shadow-sm overflow-hidden">
             {aiContent.thinking && (
@@ -216,6 +219,7 @@ export default function MessageBubble({ message }: Props) {
             <span className="text-xs text-text-hint">{time}</span>
           </div>
         </div>
+        </div>
       </motion.div>
     );
   }
@@ -230,21 +234,26 @@ export default function MessageBubble({ message }: Props) {
       data-message-id={message.id}
       onContextMenu={handleContextMenu}
     >
-      <div className={`max-w-[70%] ${isUser ? "items-end" : "items-start"} flex flex-col`}>
-        {quoteBlock}
-        <div
-          className={`px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words select-text
-            ${
-              isUser
-                ? "bg-[#95ec69] text-text-primary rounded-tr-md"
-                : "bg-white text-text-primary rounded-tl-md shadow-sm"
-            }`}
-        >
-          {message.content}
-        </div>
-        <div className={`flex items-center gap-1 mt-0.5 ${isUser ? "flex-row-reverse" : ""}`}>
-          <span className="text-xs text-text-hint">{time}</span>
-          {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
+      <div className={`max-w-[70%] ${isUser ? "items-end" : "items-start"} flex ${!isUser && message.kind === "ai_reply" ? "gap-2" : "flex-col"}`}>
+        {!isUser && message.kind === "ai_reply" && (
+          <img src={aiAvatar} alt="AI" className="w-7 h-7 rounded-full flex-shrink-0 mt-1" />
+        )}
+        <div className="flex flex-col">
+          {quoteBlock}
+          <div
+            className={`px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words select-text
+              ${
+                isUser
+                  ? "bg-[#95ec69] text-text-primary rounded-tr-md"
+                  : "bg-white text-text-primary rounded-tl-md shadow-sm"
+              }`}
+          >
+            {message.content}
+          </div>
+          <div className={`flex items-center gap-1 mt-0.5 ${isUser ? "flex-row-reverse" : ""}`}>
+            <span className="text-xs text-text-hint">{time}</span>
+            {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
+          </div>
         </div>
       </div>
     </motion.div>
