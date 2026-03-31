@@ -82,9 +82,9 @@ export default function ContextMenu() {
         if (message) {
           const currentDay = useDiaryStore.getState().currentDay;
           await ipc.addFavorite({
-            message_id: message.id,
-            content_preview: message.content || message.mood || "[图片]",
-            source_date: currentDay?.date || "",
+            messageId: message.id,
+            contentPreview: message.content || message.mood || "[图片]",
+            sourceDate: currentDay?.date || "",
           });
         }
         hideContextMenu();

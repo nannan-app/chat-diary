@@ -70,7 +70,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     if (!currentDay) return;
 
     const message = await ipc.sendMessage({
-      diary_day_id: currentDay.id,
+      diaryDayId: currentDay.id,
       kind: "text",
       content: text,
     });
@@ -101,7 +101,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     if (!currentDay) return;
 
     const message = await ipc.sendMessage({
-      diary_day_id: currentDay.id,
+      diaryDayId: currentDay.id,
       kind: "mood",
       mood,
     });

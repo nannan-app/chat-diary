@@ -81,9 +81,9 @@ export default function MessageInput() {
       const personality = settingsMap.ai_personality || "你是一个温暖的朋友，善于倾听和给出温暖的反馈";
 
       const message = await ipc.aiSummarize({
-        diary_day_id: currentDay.id,
-        api_provider: provider,
-        api_key: apiKey,
+        diaryDayId: currentDay.id,
+        apiProvider: provider,
+        apiKey: apiKey,
         personality,
       });
 
@@ -256,11 +256,11 @@ export default function MessageInput() {
             }}
             onKeyDown={handleKeyDown}
             placeholder="写点什么..."
-            rows={1}
+            rows={3}
             className="flex-1 resize-none bg-transparent text-sm text-text-primary
                        placeholder:text-text-hint focus:outline-none leading-relaxed
-                       max-h-32 overflow-y-auto"
-            style={{ minHeight: "24px" }}
+                       max-h-48 overflow-y-auto"
+            style={{ minHeight: "60px" }}
           />
           <button
             onClick={handleSend}

@@ -32,38 +32,38 @@ export const getDiaryDay = (date: string) =>
   invoke<DiaryDay>("get_diary_day", { date });
 export const listDiaryDays = (year: number, month: number) =>
   invoke<DiaryDay[]>("list_diary_days", { year, month });
-export const getMessages = (diary_day_id: number) =>
-  invoke<Message[]>("get_messages", { diary_day_id });
+export const getMessages = (diaryDayId: number) =>
+  invoke<Message[]>("get_messages", { diaryDayId });
 export const sendMessage = (params: {
-  diary_day_id: number;
+  diaryDayId: number;
   kind: string;
   content?: string;
-  image_id?: number;
-  article_id?: number;
+  imageId?: number;
+  articleId?: number;
   mood?: string;
-  quote_ref_id?: number;
+  quoteRefId?: number;
   source?: string;
 }) =>
   invoke<Message>("send_message", {
-    diary_day_id: params.diary_day_id,
+    diaryDayId: params.diaryDayId,
     kind: params.kind,
     content: params.content ?? null,
-    image_id: params.image_id ?? null,
-    article_id: params.article_id ?? null,
+    imageId: params.imageId ?? null,
+    articleId: params.articleId ?? null,
     mood: params.mood ?? null,
-    quote_ref_id: params.quote_ref_id ?? null,
+    quoteRefId: params.quoteRefId ?? null,
     source: params.source ?? null,
   });
-export const editMessage = (message_id: number, content: string) =>
-  invoke<void>("edit_message", { message_id, content });
-export const deleteMessage = (message_id: number) =>
-  invoke<void>("delete_message", { message_id });
-export const deleteDiaryDay = (diary_day_id: number) =>
-  invoke<void>("delete_diary_day", { diary_day_id });
+export const editMessage = (messageId: number, content: string) =>
+  invoke<void>("edit_message", { messageId, content });
+export const deleteMessage = (messageId: number) =>
+  invoke<void>("delete_message", { messageId });
+export const deleteDiaryDay = (diaryDayId: number) =>
+  invoke<void>("delete_diary_day", { diaryDayId });
 export const getDiaryDates = (year: number, month: number) =>
   invoke<string[]>("get_diary_dates", { year, month });
-export const createArticle = (diary_day_id: number, title: string, content: string) =>
-  invoke<Message>("create_article", { diary_day_id, title, content });
+export const createArticle = (diaryDayId: number, title: string, content: string) =>
+  invoke<Message>("create_article", { diaryDayId, title, content });
 export const getAllArticles = () =>
   invoke<Article[]>("get_all_articles");
 export const searchDiary = (query: string) =>
@@ -71,34 +71,34 @@ export const searchDiary = (query: string) =>
 
 // Media
 export const uploadImage = (
-  diary_day_id: number,
-  image_bytes: number[],
+  diaryDayId: number,
+  imageBytes: number[],
   compress: boolean
 ) =>
-  invoke<Message>("upload_image", { diary_day_id, image_bytes, compress });
-export const getFullImage = (image_id: number) =>
-  invoke<number[]>("get_full_image", { image_id });
-export const getThumbnail = (image_id: number) =>
-  invoke<number[]>("get_thumbnail", { image_id });
+  invoke<Message>("upload_image", { diaryDayId, imageBytes, compress });
+export const getFullImage = (imageId: number) =>
+  invoke<number[]>("get_full_image", { imageId });
+export const getThumbnail = (imageId: number) =>
+  invoke<number[]>("get_thumbnail", { imageId });
 
 // Tags
 export const getTags = () => invoke<Tag[]>("get_tags");
 export const createTag = (name: string) => invoke<Tag>("create_tag", { name });
-export const deleteTag = (tag_id: number) => invoke<void>("delete_tag", { tag_id });
-export const setDayTags = (diary_day_id: number, tag_ids: number[]) =>
-  invoke<void>("set_day_tags", { diary_day_id, tag_ids });
-export const getDayTags = (diary_day_id: number) =>
-  invoke<Tag[]>("get_day_tags", { diary_day_id });
+export const deleteTag = (tagId: number) => invoke<void>("delete_tag", { tagId });
+export const setDayTags = (diaryDayId: number, tagIds: number[]) =>
+  invoke<void>("set_day_tags", { diaryDayId, tagIds });
+export const getDayTags = (diaryDayId: number) =>
+  invoke<Tag[]>("get_day_tags", { diaryDayId });
 
 // Favorites
 export const addFavorite = (params: {
-  message_id?: number;
-  article_id?: number;
-  content_preview: string;
-  source_date: string;
+  messageId?: number;
+  articleId?: number;
+  contentPreview: string;
+  sourceDate: string;
 }) => invoke<Favorite>("add_favorite", params);
-export const removeFavorite = (favorite_id: number) =>
-  invoke<void>("remove_favorite", { favorite_id });
+export const removeFavorite = (favoriteId: number) =>
+  invoke<void>("remove_favorite", { favoriteId });
 export const getFavorites = () => invoke<Favorite[]>("get_favorites");
 
 // Stats
@@ -109,18 +109,18 @@ export const checkAndUnlockAchievements = () =>
 
 // AI
 export const aiSummarize = (params: {
-  diary_day_id: number;
-  api_provider: string;
-  api_key: string;
-  api_url?: string;
+  diaryDayId: number;
+  apiProvider: string;
+  apiKey: string;
+  apiUrl?: string;
   personality: string;
 }) => invoke<Message>("ai_summarize", params);
 
 // Auth - extended
-export const changePassword = (old_password: string, new_password: string, new_hint?: string) =>
-  invoke<void>("change_password", { old_password, new_password, new_hint: new_hint ?? null });
-export const resetPasswordWithRecovery = (recovery_code: string, new_password: string, new_hint?: string) =>
-  invoke<SetupResponse>("reset_password_with_recovery", { recovery_code, new_password, new_hint: new_hint ?? null });
+export const changePassword = (oldPassword: string, newPassword: string, newHint?: string) =>
+  invoke<void>("change_password", { oldPassword, newPassword, newHint: newHint ?? null });
+export const resetPasswordWithRecovery = (recoveryCode: string, newPassword: string, newHint?: string) =>
+  invoke<SetupResponse>("reset_password_with_recovery", { recoveryCode, newPassword, newHint: newHint ?? null });
 export const regenerateRecoveryCode = () =>
   invoke<string>("regenerate_recovery_code");
 export const updatePasswordHint = (hint?: string) =>
@@ -135,20 +135,20 @@ export const listAllImagesWithThumbnails = () =>
   invoke<{id: number; thumbnail: number[]; date: string}[]>("list_all_images_with_thumbnails");
 
 // Tags - extended
-export const setMessageTags = (message_id: number, tag_ids: number[]) =>
-  invoke<void>("set_message_tags", { message_id, tag_ids });
-export const getMessageTags = (message_id: number) =>
-  invoke<Tag[]>("get_message_tags", { message_id });
+export const setMessageTags = (messageId: number, tagIds: number[]) =>
+  invoke<void>("set_message_tags", { messageId, tagIds });
+export const getMessageTags = (messageId: number) =>
+  invoke<Tag[]>("get_message_tags", { messageId });
 
 // Export/Import
-export const exportDatabase = (output_path: string) =>
-  invoke<void>("export_database", { output_path });
-export const exportDiaryDay = (diary_day_id: number, format: string) =>
-  invoke<string>("export_diary_day", { diary_day_id, format });
+export const exportDatabase = (outputPath: string) =>
+  invoke<void>("export_database", { outputPath });
+export const exportDiaryDay = (diaryDayId: number, format: string) =>
+  invoke<string>("export_diary_day", { diaryDayId, format });
 export const deleteAllData = () =>
   invoke<void>("delete_all_data");
-export const importDatabase = (zip_path: string, password: string) =>
-  invoke<void>("import_database", { zip_path, password });
+export const importDatabase = (zipPath: string, password: string) =>
+  invoke<void>("import_database", { zipPath, password });
 
 // Settings
 export const getSetting = (key: string) =>
