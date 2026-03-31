@@ -334,7 +334,7 @@ export default function MessageInput() {
             exit={{ opacity: 0, y: 10 }}
             className="px-3 py-1.5"
           >
-            <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2">
+            <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2 select-all cursor-text">
               {t("toolbar.aiError")}: {aiError}
             </div>
           </motion.div>
