@@ -22,6 +22,7 @@ export default function DiaryList() {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [filterTagId, setFilterTagId] = useState<number | null>(null);
   const [showTagFilter, setShowTagFilter] = useState(false);
+  const [companionDays, setCompanionDays] = useState(0);
   const diaryDays = useDiaryStore((s) => s.diaryDays);
   const currentDay = useDiaryStore((s) => s.currentDay);
   const selectedDate = useDiaryStore((s) => s.selectedDate);
@@ -63,6 +64,16 @@ export default function DiaryList() {
     };
     loadTags();
   }, [diaryDays, tagVersion]);
+
+  // Load companion days (from first entry to today)
+  useEffect(() => {
+    ipc.getWritingStats().then((stats) => {
+      if (stats.first_entry_date) {
+        const days = dayjs().diff(dayjs(stats.first_entry_date), "day") + 1;
+        setCompanionDays(days);
+      }
+    });
+  }, []);
 
   // Load all tags for the filter dropdown
   useEffect(() => {
@@ -360,7 +371,7 @@ export default function DiaryList() {
             <ChevronLeft className="w-4 h-4" />
           </button>
           <p className="text-xs text-text-hint">
-            {t("stats.companion", { days: diaryDays.length })}
+            {t("stats.companion", { days: companionDays })}
           </p>
           <button
             onClick={goNextMonth}
