@@ -168,24 +168,41 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             <div className="space-y-4">
               <SettingItem label={t("settings.aiProvider")}>
                 <select
-                  value={settings.ai_provider || "builtin"}
+                  value={settings.ai_provider || "openai"}
                   onChange={(e) => updateSetting("ai_provider", e.target.value)}
                   className="text-sm border border-border rounded-lg px-2 py-1"
                 >
-                  <option value="builtin">{t("settings.aiBuiltin")}</option>
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
                   <option value="custom">{t("settings.aiCustom")}</option>
                 </select>
               </SettingItem>
-              {settings.ai_provider && settings.ai_provider !== "builtin" && (
-                <SettingItem label="API Key">
+              <SettingItem label="API Key">
+                <input
+                  type="password"
+                  value={settings.ai_api_key || ""}
+                  onChange={(e) => updateSetting("ai_api_key", e.target.value)}
+                  placeholder="sk-..."
+                  className="text-sm border border-border rounded-lg px-2 py-1 w-48"
+                />
+              </SettingItem>
+              <SettingItem label={t("settings.aiModel")}>
+                <input
+                  type="text"
+                  value={settings.ai_model || ""}
+                  onChange={(e) => updateSetting("ai_model", e.target.value)}
+                  placeholder={settings.ai_provider === "anthropic" ? "claude-sonnet-4-20250514" : "gpt-4o-mini"}
+                  className="text-sm border border-border rounded-lg px-2 py-1 w-48"
+                />
+              </SettingItem>
+              {(settings.ai_provider === "custom" || settings.ai_provider === "openai") && (
+                <SettingItem label="Base URL">
                   <input
-                    type="password"
-                    value={settings.ai_api_key || ""}
-                    onChange={(e) => updateSetting("ai_api_key", e.target.value)}
-                    placeholder="sk-..."
-                    className="text-sm border border-border rounded-lg px-2 py-1 w-48"
+                    type="text"
+                    value={settings.ai_base_url || ""}
+                    onChange={(e) => updateSetting("ai_base_url", e.target.value)}
+                    placeholder="https://api.openai.com/v1/chat/completions"
+                    className="text-sm border border-border rounded-lg px-2 py-1 w-64"
                   />
                 </SettingItem>
               )}

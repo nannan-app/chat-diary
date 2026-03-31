@@ -115,6 +115,7 @@ export const aiSummarize = (params: {
   apiProvider: string;
   apiKey: string;
   apiUrl?: string;
+  apiModel?: string;
   personality: string;
 }) => invoke<Message>("ai_summarize", params);
 

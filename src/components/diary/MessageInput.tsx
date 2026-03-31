@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera, SmilePlus, Bot, Tag, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,6 +16,7 @@ export default function MessageInput() {
   const [text, setText] = useState("");
   const [showMoodPanel, setShowMoodPanel] = useState(false);
   const [showTagPanel, setShowTagPanel] = useState(false);
+  const [aiConfigured, setAiConfigured] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [inputHeight, setInputHeight] = useState(80);
@@ -39,6 +40,15 @@ export default function MessageInput() {
   const wordCount = useDiaryStore((s) =>
     s.messages.reduce((acc, m) => acc + (m.content?.length || 0), 0)
   );
+
+  // Check if AI is configured
+  useEffect(() => {
+    ipc.getAllSettings().then((pairs) => {
+      const map: Record<string, string> = {};
+      for (const [k, v] of pairs) map[k] = v;
+      setAiConfigured(!!(map.ai_api_key));
+    });
+  }, []);
 
   const handleTyping = useCallback(() => {
     setIsTyping(true);
@@ -75,6 +85,7 @@ export default function MessageInput() {
   };
 
   const handleAiSummarize = async () => {
+    if (!aiConfigured) return;
     const currentDay = useDiaryStore.getState().currentDay;
     if (!currentDay) return;
     try {
@@ -82,14 +93,16 @@ export default function MessageInput() {
       const settingsMap: Record<string, string> = {};
       for (const [k, v] of settings) settingsMap[k] = v;
 
-      const provider = settingsMap.ai_provider || "builtin";
+      const provider = settingsMap.ai_provider || "openai";
       const apiKey = settingsMap.ai_api_key || "";
-      const personality = settingsMap.ai_personality || "你是一个温暖的朋友，善于倾听和给出温暖的反馈";
+      const personality = settingsMap.ai_personality || t("settings.aiDefaultPersonality");
 
       const message = await ipc.aiSummarize({
         diaryDayId: currentDay.id,
         apiProvider: provider,
         apiKey: apiKey,
+        apiUrl: settingsMap.ai_base_url || undefined,
+        apiModel: settingsMap.ai_model || undefined,
         personality,
       });
 
@@ -237,8 +250,11 @@ export default function MessageInput() {
         </button>
         <button
           onClick={handleAiSummarize}
-          className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title={t("toolbar.ai")}
+          disabled={!aiConfigured}
+          className={`p-1.5 rounded-lg transition-colors text-sm ${
+            aiConfigured ? "hover:bg-warm-100" : "opacity-40 cursor-not-allowed"
+          }`}
+          title={aiConfigured ? t("toolbar.ai") : t("toolbar.aiNotConfigured")}
         >
           <Bot className="w-4 h-4" />
         </button>

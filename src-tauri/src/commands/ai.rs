@@ -31,6 +31,7 @@ pub async fn ai_summarize(
     api_provider: String,
     api_key: String,
     api_url: Option<String>,
+    api_model: Option<String>,
     personality: String,
 ) -> Result<Message, MurmurError> {
     // Collect today's messages
@@ -64,20 +65,8 @@ pub async fn ai_summarize(
         return Err(MurmurError::General("今天还没有写日记内容".into()));
     }
 
-    // Rate limit for built-in AI (10/day)
-    if api_provider == "builtin" {
-        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-        let count = with_db(&state, |conn| {
-            let count: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM messages WHERE diary_day_id IN (SELECT id FROM diary_days WHERE date = ?1) AND kind = 'ai_reply' AND source = 'app'",
-                [&today],
-                |row| row.get(0),
-            ).unwrap_or(0);
-            Ok(count)
-        })?;
-        if count >= 10 {
-            return Err(MurmurError::General("今日内置 AI 使用次数已达上限（10次/天），请设置自定义 API Key 获得无限次使用".into()));
-        }
+    if api_key.is_empty() {
+        return Err(MurmurError::General("Please configure AI API Key in settings".into()));
     }
 
     // Build AI prompt
@@ -87,19 +76,17 @@ pub async fn ai_summarize(
     );
 
     // Call AI API based on provider
+    let model = api_model.unwrap_or_default();
     let ai_reply = match api_provider.as_str() {
-        "openai" | "custom" => {
-            let url = api_url.unwrap_or_else(|| "https://api.openai.com/v1/chat/completions".to_string());
-            call_openai_compatible(&url, &api_key, &system_prompt, &messages_text).await?
-        }
         "anthropic" => {
-            call_anthropic(&api_key, &system_prompt, &messages_text).await?
+            let m = if model.is_empty() { "claude-sonnet-4-20250514".to_string() } else { model };
+            call_anthropic(&api_key, &m, &system_prompt, &messages_text).await?
         }
         _ => {
-            // Built-in MiniMax - for now return a placeholder
-            // In production, this would call MiniMax API with the developer's key
-            format!("📝 今天你记录了不少内容呢！\n\n{}",
-                "看起来今天过得很充实。继续保持记录的习惯，未来的你会感谢现在的自己。")
+            // OpenAI-compatible (openai, custom, or any other)
+            let url = api_url.unwrap_or_else(|| "https://api.openai.com/v1/chat/completions".to_string());
+            let m = if model.is_empty() { "gpt-4o-mini".to_string() } else { model };
+            call_openai_compatible(&url, &api_key, &m, &system_prompt, &messages_text).await?
         }
     };
 
@@ -124,12 +111,13 @@ pub async fn ai_summarize(
 async fn call_openai_compatible(
     url: &str,
     api_key: &str,
+    model: &str,
     system_prompt: &str,
     user_content: &str,
 ) -> Result<String, MurmurError> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
-        "model": "gpt-4o-mini",
+        "model": model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content}
@@ -159,12 +147,13 @@ async fn call_openai_compatible(
 
 async fn call_anthropic(
     api_key: &str,
+    model: &str,
     system_prompt: &str,
     user_content: &str,
 ) -> Result<String, MurmurError> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
-        "model": "claude-sonnet-4-20250514",
+        "model": model,
         "max_tokens": 500,
         "system": system_prompt,
         "messages": [
