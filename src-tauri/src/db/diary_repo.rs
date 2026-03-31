@@ -49,6 +49,7 @@ pub fn list_days(conn: &Connection, year: i32, month: u32) -> Result<Vec<DiaryDa
         "SELECT id, date, summary, word_count, created_at, updated_at
          FROM diary_days
          WHERE date LIKE ?1
+           AND EXISTS (SELECT 1 FROM messages WHERE diary_day_id = diary_days.id)
          ORDER BY date DESC",
     )?;
 
