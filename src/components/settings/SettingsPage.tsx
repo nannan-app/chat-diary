@@ -205,6 +205,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
                   <option value="google">Google Gemini</option>
+                  <option value="minimax">MiniMax ({t("settings.aiCN")})</option>
+                  <option value="minimax_global">MiniMax (Global)</option>
                   <option value="deepseek">DeepSeek</option>
                   <option value="ollama">Ollama ({t("settings.aiLocal")})</option>
                   <option value="custom">{t("settings.aiCustom")}</option>
@@ -229,6 +231,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   placeholder={{
                     anthropic: "claude-sonnet-4-20250514",
                     google: "gemini-2.0-flash",
+                    minimax: "MiniMax-M2.7",
+                    minimax_global: "MiniMax-M2.7",
                     deepseek: "deepseek-chat",
                     ollama: "llama3.2",
                     openai: "gpt-4o-mini",
@@ -237,7 +241,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   className="text-sm border border-border rounded-lg px-2 py-1 w-48"
                 />
               </SettingItem>
-              {["custom", "openai", "deepseek", "ollama"].includes(settings.ai_provider || "openai") && (
+              {["custom", "openai", "minimax", "minimax_global", "deepseek", "ollama"].includes(settings.ai_provider || "openai") && (
                 <SettingItem label="Base URL">
                   <input
                     type="text"
@@ -246,6 +250,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                     placeholder={{
                       ollama: "http://localhost:11434/v1/chat/completions",
                       deepseek: "https://api.deepseek.com/v1/chat/completions",
+                      minimax: "https://api.minimaxi.com/anthropic/v1/messages",
+                      minimax_global: "https://api.minimax.io/anthropic/v1/messages",
                     }[settings.ai_provider || ""] || "https://api.openai.com/v1/chat/completions"}
                     className="text-sm border border-border rounded-lg px-2 py-1 w-64"
                   />

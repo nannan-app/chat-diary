@@ -86,6 +86,16 @@ pub async fn ai_summarize(
             let m = if model.is_empty() { "gemini-2.0-flash".to_string() } else { model };
             call_google_gemini(&api_key, &m, &system_prompt, &messages_text).await?
         }
+        "minimax" => {
+            let url = api_url.unwrap_or_else(|| "https://api.minimaxi.com/anthropic/v1/messages".to_string());
+            let m = if model.is_empty() { "MiniMax-M2.7".to_string() } else { model };
+            call_anthropic_compatible(&url, &api_key, &m, &system_prompt, &messages_text).await?
+        }
+        "minimax_global" => {
+            let url = api_url.unwrap_or_else(|| "https://api.minimax.io/anthropic/v1/messages".to_string());
+            let m = if model.is_empty() { "MiniMax-M2.7".to_string() } else { model };
+            call_anthropic_compatible(&url, &api_key, &m, &system_prompt, &messages_text).await?
+        }
         "deepseek" => {
             let url = api_url.unwrap_or_else(|| "https://api.deepseek.com/v1/chat/completions".to_string());
             let m = if model.is_empty() { "deepseek-chat".to_string() } else { model };
@@ -198,6 +208,46 @@ async fn call_google_gemini(
         .map_err(|e| MurmurError::General(format!("AI response parse failed: {}", e)))?;
 
     json["candidates"][0]["content"]["parts"][0]["text"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| MurmurError::General("AI returned empty response".into()))
+}
+
+/// Anthropic Messages API compatible endpoint (used by MiniMax etc.)
+/// Uses Bearer auth instead of x-api-key header.
+async fn call_anthropic_compatible(
+    url: &str,
+    api_key: &str,
+    model: &str,
+    system_prompt: &str,
+    user_content: &str,
+) -> Result<String, MurmurError> {
+    let client = reqwest::Client::new();
+    let body = serde_json::json!({
+        "model": model,
+        "max_tokens": 500,
+        "system": system_prompt,
+        "messages": [
+            {"role": "user", "content": user_content}
+        ]
+    });
+
+    let resp = client
+        .post(url)
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("anthropic-version", "2023-06-01")
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| MurmurError::General(format!("AI request failed: {}", e)))?;
+
+    let json: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| MurmurError::General(format!("AI response parse failed: {}", e)))?;
+
+    json["content"][0]["text"]
         .as_str()
         .map(|s| s.to_string())
         .ok_or_else(|| MurmurError::General("AI returned empty response".into()))
