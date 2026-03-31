@@ -18,6 +18,7 @@ export default function ChatView() {
   const loading = useDiaryStore((s) => s.loading);
   const secondaryPanelVisible = useUIStore((s) => s.secondaryPanelVisible);
   const toggleSecondaryPanel = useUIStore((s) => s.toggleSecondaryPanel);
+  const highlightMessageId = useUIStore((s) => s.highlightMessageId);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom on new messages or date change
@@ -26,9 +27,17 @@ export default function ChatView() {
     if (!loading && messages.length > 0) {
       const dateChanged = prevDate.current !== selectedDate;
       prevDate.current = selectedDate;
-      bottomRef.current?.scrollIntoView({ behavior: dateChanged ? "instant" : "smooth" });
+      // If jumping to a specific message, scroll to it instead of bottom
+      if (highlightMessageId) {
+        setTimeout(() => {
+          const el = document.querySelector(`[data-message-id="${highlightMessageId}"]`);
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 100);
+      } else {
+        bottomRef.current?.scrollIntoView({ behavior: dateChanged ? "instant" : "smooth" });
+      }
     }
-  }, [messages.length, selectedDate, loading]);
+  }, [messages.length, selectedDate, loading, highlightMessageId]);
 
   const prompts = getDailyPrompts();
   const dailyPrompt = prompts[new Date(selectedDate).getDate() % prompts.length];

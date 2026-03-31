@@ -15,6 +15,7 @@ interface UIState {
   showSettings: boolean;
   viewingArticleId: number | null;
   viewingImageId: number | null;
+  highlightMessageId: number | null;
 
   setActiveNav: (nav: NavSection) => void;
   toggleSecondaryPanel: () => void;
@@ -25,6 +26,7 @@ interface UIState {
   setShowSettings: (show: boolean) => void;
   setViewingArticleId: (id: number | null) => void;
   setViewingImageId: (id: number | null) => void;
+  setHighlightMessageId: (id: number | null) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -36,6 +38,7 @@ export const useUIStore = create<UIState>((set) => ({
   showSettings: false,
   viewingArticleId: null,
   viewingImageId: null,
+  highlightMessageId: null,
 
   setActiveNav: (nav) => set({ activeNav: nav }),
   toggleSecondaryPanel: () =>
@@ -49,4 +52,5 @@ export const useUIStore = create<UIState>((set) => ({
   setShowSettings: (show) => set({ showSettings: show }),
   setViewingArticleId: (id) => set({ viewingArticleId: id }),
   setViewingImageId: (id) => set({ viewingImageId: id }),
+  setHighlightMessageId: (id) => set({ highlightMessageId: id }),
 }));

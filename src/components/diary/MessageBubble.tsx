@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
@@ -13,9 +14,24 @@ interface Props {
 export default function MessageBubble({ message }: Props) {
   const { t } = useTranslation();
   const showContextMenu = useUIStore((s) => s.showContextMenu);
+  const highlightMessageId = useUIStore((s) => s.highlightMessageId);
   const isUser = message.kind !== "ai_reply";
   const time = dayjs(message.created_at).format("YYYY-MM-DD HH:mm");
   const sourceIcon = SOURCE_ICONS[message.source] || "";
+  const [highlighted, setHighlighted] = useState(false);
+
+  useEffect(() => {
+    if (highlightMessageId === message.id) {
+      setHighlighted(true);
+      const timer = setTimeout(() => {
+        setHighlighted(false);
+        useUIStore.getState().setHighlightMessageId(null);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightMessageId, message.id]);
+
+  const highlightClass = highlighted ? "bg-accent/15 rounded-xl transition-colors duration-500" : "";
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -29,7 +45,8 @@ export default function MessageBubble({ message }: Props) {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className="flex justify-center my-2"
+        className={`flex justify-center my-2 ${highlightClass}`}
+        data-message-id={message.id}
       >
         <div className="bg-warm-100 rounded-2xl px-4 py-2 text-center">
           <span className="text-2xl">{message.mood}</span>
@@ -51,7 +68,8 @@ export default function MessageBubble({ message }: Props) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2 px-4`}
+        className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2 px-4 ${highlightClass}`}
+        data-message-id={message.id}
         onContextMenu={handleContextMenu}
       >
         <div className="max-w-[200px]">
@@ -93,7 +111,8 @@ export default function MessageBubble({ message }: Props) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className="flex justify-end mb-2 px-4"
+        className={`flex justify-end mb-2 px-4 ${highlightClass}`}
+        data-message-id={message.id}
         onContextMenu={handleContextMenu}
       >
         <div className="max-w-[70%]">
@@ -139,7 +158,8 @@ export default function MessageBubble({ message }: Props) {
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2 px-4`}
+      className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2 px-4 ${highlightClass}`}
+      data-message-id={message.id}
       onContextMenu={handleContextMenu}
     >
       <div className={`max-w-[70%] ${isUser ? "items-end" : "items-start"} flex flex-col`}>
