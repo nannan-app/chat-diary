@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { BookHeart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "../../stores/authStore";
 import { getPasswordHint, resetPasswordWithRecovery } from "../../lib/ipc";
 import { getGreetings } from "../../lib/constants";
+import loginHero from "../../assets/illustrations/login_hero.png";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -44,12 +44,11 @@ export default function LoginScreen() {
         className="flex flex-col items-center gap-6"
       >
         <motion.div
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="w-20 h-20 rounded-2xl bg-accent/20 flex items-center justify-center text-4xl"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
         >
-          <BookHeart className="w-10 h-10" />
+          <img src={loginHero} alt="" className="w-40 h-40 object-contain drop-shadow-lg" />
         </motion.div>
 
         <motion.h1
