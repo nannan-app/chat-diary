@@ -44,11 +44,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setupPassword: async (password: string, hint?: string) => {
     const result = await ipc.setupPassword(password, hint);
-    set({
-      isLoggedIn: true,
-      spaceType: "private",
-      isFirstTime: false,
-    });
+    // Don't set isLoggedIn/isFirstTime here — keep SetupScreen mounted
+    // so the recovery code step can be shown. The user will call login()
+    // after confirming they've saved the recovery code.
     return result.recovery_code;
   },
 
