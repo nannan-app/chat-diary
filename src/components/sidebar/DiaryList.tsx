@@ -23,6 +23,7 @@ export default function DiaryList() {
   const [filterTagId, setFilterTagId] = useState<number | null>(null);
   const [showTagFilter, setShowTagFilter] = useState(false);
   const diaryDays = useDiaryStore((s) => s.diaryDays);
+  const currentDay = useDiaryStore((s) => s.currentDay);
   const selectedDate = useDiaryStore((s) => s.selectedDate);
   const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
   const loadDiaryList = useDiaryStore((s) => s.loadDiaryList);
@@ -65,6 +66,22 @@ export default function DiaryList() {
       dayTags[day.id]?.some((tag) => tag.id === filterTagId)
     );
   }, [diaryDays, dayTags, filterTagId]);
+
+  const visibleDays = useMemo(() => {
+    const today = dayjs();
+    const isViewingCurrentMonth =
+      viewYear === today.year() && viewMonth === today.month() + 1;
+
+    if (!isViewingCurrentMonth || !currentDay) {
+      return filteredDays;
+    }
+
+    if (filteredDays.some((day) => day.date === currentDay.date)) {
+      return filteredDays;
+    }
+
+    return [currentDay, ...filteredDays].sort((a, b) => b.date.localeCompare(a.date));
+  }, [filteredDays, currentDay, viewYear, viewMonth]);
 
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
@@ -261,7 +278,7 @@ export default function DiaryList() {
         />
       ) : (
       <div className="flex-1 overflow-y-auto px-2">
-        {filteredDays.map((day) => {
+        {visibleDays.map((day) => {
           const isSelected = day.date === selectedDate;
           const d = dayjs(day.date);
 
@@ -308,13 +325,13 @@ export default function DiaryList() {
           );
         })}
 
-        {filteredDays.length === 0 && diaryDays.length > 0 && (
+        {visibleDays.length === 0 && diaryDays.length > 0 && (
           <p className="text-center text-text-hint text-sm mt-8">
             {t("diary.noTagResults")}
           </p>
         )}
 
-        {diaryDays.length === 0 && (
+        {visibleDays.length === 0 && (
           <p className="text-center text-text-hint text-sm mt-8">
             {t("diary.noEntries")}
           </p>

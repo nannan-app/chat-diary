@@ -19,7 +19,14 @@ export default function ChatView() {
   const secondaryPanelVisible = useUIStore((s) => s.secondaryPanelVisible);
   const toggleSecondaryPanel = useUIStore((s) => s.toggleSecondaryPanel);
   const highlightMessageId = useUIStore((s) => s.highlightMessageId);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const hasInitializedScroll = useRef(false);
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior });
+  };
 
   // Scroll to bottom on new messages or date change
   const prevDate = useRef(selectedDate);
@@ -27,6 +34,9 @@ export default function ChatView() {
     if (!loading && messages.length > 0) {
       const dateChanged = prevDate.current !== selectedDate;
       prevDate.current = selectedDate;
+      const behavior: ScrollBehavior =
+        !hasInitializedScroll.current || dateChanged ? "auto" : "smooth";
+
       // If jumping to a specific message, scroll to it instead of bottom
       if (highlightMessageId) {
         setTimeout(() => {
@@ -34,8 +44,12 @@ export default function ChatView() {
           el?.scrollIntoView({ behavior: "smooth", block: "center" });
         }, 100);
       } else {
-        bottomRef.current?.scrollIntoView({ behavior: dateChanged ? "instant" : "smooth" });
+        scrollToBottom(behavior);
+        requestAnimationFrame(() => scrollToBottom("auto"));
+        setTimeout(() => scrollToBottom("auto"), 120);
       }
+
+      hasInitializedScroll.current = true;
     }
   }, [messages.length, selectedDate, loading, highlightMessageId]);
 
@@ -71,7 +85,7 @@ export default function ChatView() {
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto py-3">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto py-3">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-text-hint text-sm">{t("app.loading")}</span>
@@ -92,7 +106,6 @@ export default function ChatView() {
             <MessageBubble key={msg.id} message={msg} />
           ))
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}

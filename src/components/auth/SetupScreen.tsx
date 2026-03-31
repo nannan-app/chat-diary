@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BookHeart } from "lucide-react";
 import { motion } from "framer-motion";
+import * as ipc from "../../lib/ipc";
 import { useAuthStore } from "../../stores/authStore";
 
 type Step = "welcome" | "password" | "hint" | "recovery";
@@ -14,6 +15,10 @@ export default function SetupScreen() {
   const [hint, setHint] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
   const [error, setError] = useState("");
+  const [importZipPath, setImportZipPath] = useState("");
+  const [importPassword, setImportPassword] = useState("");
+  const [importError, setImportError] = useState("");
+  const [importing, setImporting] = useState(false);
   const setupPassword = useAuthStore((s) => s.setupPassword);
 
   const handleSetPassword = async () => {
@@ -52,6 +57,42 @@ export default function SetupScreen() {
     URL.revokeObjectURL(url);
   };
 
+  const handleImportBackup = async () => {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+
+    const path = await open({ filters: [{ name: "ZIP", extensions: ["zip"] }] });
+    if (!path || Array.isArray(path)) return;
+
+    setImportZipPath(path);
+    setImportPassword("");
+    setImportError("");
+  };
+
+  const submitImportBackup = async () => {
+    if (!importZipPath) return;
+    if (!importPassword) {
+      setImportError(t("auth.setup.enterPassword"));
+      return;
+    }
+
+    const { message: showMessage } = await import("@tauri-apps/plugin-dialog");
+    setImporting(true);
+    setImportError("");
+
+    try {
+      await ipc.importDatabase(importZipPath, importPassword);
+      await showMessage(t("settings.importSuccess"), { title: t("settings.done") });
+      window.location.reload();
+    } catch (e: any) {
+      const detail = e instanceof Error ? e.message : String(e);
+      const message = t("settings.importFailed") + detail;
+      setImportError(message);
+      await showMessage(message, { title: t("settings.error"), kind: "error" });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-b from-warm-50 to-warm-100">
       <motion.div
@@ -81,6 +122,7 @@ export default function SetupScreen() {
                 {t("auth.setup.create")}
               </button>
               <button
+                onClick={handleImportBackup}
                 className="w-full py-2.5 rounded-xl bg-white border border-border text-text-primary
                            hover:bg-warm-50 active:scale-[0.98] transition-all"
               >
@@ -208,6 +250,61 @@ export default function SetupScreen() {
           </>
         )}
       </motion.div>
+
+      {importZipPath && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center px-6">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl border border-border p-6">
+            <h2 className="text-xl font-light text-text-primary text-center">
+              {t("auth.setup.import")}
+            </h2>
+            <p className="mt-2 text-sm text-text-hint text-center">
+              {t("settings.importPasswordPrompt")}
+            </p>
+            <p className="mt-3 text-xs text-text-hint break-all bg-warm-50 rounded-lg px-3 py-2">
+              {importZipPath}
+            </p>
+            <input
+              type="password"
+              value={importPassword}
+              onChange={(e) => setImportPassword(e.target.value)}
+              placeholder={t("auth.password.placeholder")}
+              autoFocus
+              className="mt-4 w-full px-4 py-2.5 rounded-xl bg-white border border-border
+                         text-center text-text-primary placeholder:text-text-hint
+                         focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30
+                         transition-all"
+            />
+            {importError && (
+              <p className="mt-3 text-xs text-red-400 text-center whitespace-pre-wrap">
+                {importError}
+              </p>
+            )}
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => {
+                  if (importing) return;
+                  setImportZipPath("");
+                  setImportPassword("");
+                  setImportError("");
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-white border border-border text-text-primary
+                           hover:bg-warm-50 active:scale-[0.98] transition-all"
+              >
+                {t("settings.cancel")}
+              </button>
+              <button
+                onClick={submitImportBackup}
+                disabled={importing}
+                className="flex-1 py-2.5 rounded-xl bg-accent text-white font-medium
+                           hover:bg-accent-hover active:scale-[0.98] transition-all
+                           disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {importing ? t("app.loading") : t("settings.import")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
