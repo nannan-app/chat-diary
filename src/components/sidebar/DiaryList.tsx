@@ -29,9 +29,19 @@ export default function DiaryList() {
   const loadDiaryList = useDiaryStore((s) => s.loadDiaryList);
   const tagVersion = useDiaryStore((s) => s.tagVersion);
 
+  const loadToday = useDiaryStore((s) => s.loadToday);
+
   useEffect(() => {
     loadDiaryList(viewYear, viewMonth);
-  }, [loadDiaryList, viewYear, viewMonth]);
+    // When switching back to the current month, restore today's entry
+    const today = dayjs();
+    if (viewYear === today.year() && viewMonth === today.month() + 1) {
+      const cur = useDiaryStore.getState().currentDay;
+      if (!cur || cur.date !== today.format("YYYY-MM-DD")) {
+        loadToday();
+      }
+    }
+  }, [loadDiaryList, loadToday, viewYear, viewMonth]);
 
   // Load tags for each diary day
   useEffect(() => {
