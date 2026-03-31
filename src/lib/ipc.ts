@@ -145,6 +145,10 @@ export const getTelegramStatus = () =>
 export const fetchUrlMeta = (url: string) =>
   invoke<{ url: string; title: string | null; description: string | null; image: string | null; site_name: string | null }>("fetch_url_meta", { url });
 
+// Shortcut
+export const updateQuickCaptureShortcut = (shortcut: string) =>
+  invoke<void>("update_quick_capture_shortcut", { shortcut });
+
 // Diary - extended
 export const getRandomDiaryDay = () =>
   invoke<DiaryDay | null>("get_random_diary_day");

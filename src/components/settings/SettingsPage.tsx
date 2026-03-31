@@ -385,6 +385,35 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   />
                 </SettingItem>
               )}
+              <SettingItem label={t("settings.quickCaptureShortcut")}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={settings.quick_capture_shortcut || "CmdOrCtrl+Shift+M"}
+                    onChange={(e) => updateSetting("quick_capture_shortcut", e.target.value)}
+                    className="text-sm border border-border rounded-lg px-2 py-1 w-48 font-mono"
+                  />
+                  <button
+                    onClick={async () => {
+                      const shortcut = settings.quick_capture_shortcut || "CmdOrCtrl+Shift+M";
+                      try {
+                        await ipc.updateQuickCaptureShortcut(shortcut);
+                        setAccountSuccess(t("settings.shortcutApplied"));
+                        setTimeout(() => setAccountSuccess(""), 2000);
+                      } catch (e: any) {
+                        setAccountError(String(e));
+                        setTimeout(() => setAccountError(""), 4000);
+                      }
+                    }}
+                    className="text-sm bg-accent text-white px-3 py-1 rounded-lg hover:bg-accent-hover"
+                  >
+                    {t("settings.apply")}
+                  </button>
+                </div>
+              </SettingItem>
+              <p className="text-xs text-text-hint pl-1 -mt-2">
+                {t("settings.shortcutHint")}
+              </p>
             </div>
           )}
 

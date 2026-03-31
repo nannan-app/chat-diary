@@ -11,6 +11,50 @@ use tauri::webview::WebviewWindowBuilder;
 
 use state::AppState;
 
+fn register_quick_capture_shortcut(app_handle: &tauri::AppHandle, shortcut: &str) {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+    // Unregister all existing shortcuts first
+    let _ = app_handle.global_shortcut().unregister_all();
+
+    let handle = app_handle.clone();
+    if let Err(e) = app_handle.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, event| {
+        if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+            if let Some(w) = handle.get_webview_window("quick-capture") {
+                w.show().ok();
+                w.set_focus().ok();
+            } else {
+                let url = if cfg!(debug_assertions) {
+                    tauri::WebviewUrl::External("http://localhost:1420/#/quick-capture".parse().unwrap())
+                } else {
+                    tauri::WebviewUrl::App("index.html#/quick-capture".into())
+                };
+                if let Ok(w) = WebviewWindowBuilder::new(&handle, "quick-capture", url)
+                    .title("Quick Capture")
+                    .inner_size(480.0, 72.0)
+                    .resizable(false)
+                    .decorations(false)
+                    .always_on_top(true)
+                    .center()
+                    .visible(true)
+                    .skip_taskbar(true)
+                    .build()
+                {
+                    w.set_focus().ok();
+                }
+            }
+        }
+    }) {
+        eprintln!("[shortcut] Failed to register '{}': {}", shortcut, e);
+    }
+}
+
+#[tauri::command]
+fn update_quick_capture_shortcut(app_handle: tauri::AppHandle, shortcut: String) -> Result<(), error::MurmurError> {
+    register_quick_capture_shortcut(&app_handle, &shortcut);
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
@@ -41,37 +85,8 @@ pub fn run() {
             let app_state = AppState::new(data_dir);
             app.manage(app_state);
 
-            // Register global shortcut for quick capture (Cmd/Ctrl+Shift+M)
-            use tauri_plugin_global_shortcut::GlobalShortcutExt;
-            let handle = app.handle().clone();
-            app.global_shortcut().on_shortcut("CmdOrCtrl+Shift+M", move |_app, _shortcut, event| {
-                if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                    // Show existing quick-capture window or create a new one
-                    if let Some(w) = handle.get_webview_window("quick-capture") {
-                        w.show().ok();
-                        w.set_focus().ok();
-                    } else {
-                        let url = if cfg!(debug_assertions) {
-                            tauri::WebviewUrl::External("http://localhost:1420/#/quick-capture".parse().unwrap())
-                        } else {
-                            tauri::WebviewUrl::App("index.html#/quick-capture".into())
-                        };
-                        if let Ok(w) = WebviewWindowBuilder::new(&handle, "quick-capture", url)
-                            .title("Quick Capture")
-                            .inner_size(480.0, 72.0)
-                            .resizable(false)
-                            .decorations(false)
-                            .always_on_top(true)
-                            .center()
-                            .visible(true)
-                            .skip_taskbar(true)
-                            .build()
-                        {
-                            w.set_focus().ok();
-                        }
-                    }
-                }
-            })?;
+            // Register default global shortcut for quick capture
+            register_quick_capture_shortcut(app.handle(), "CmdOrCtrl+Shift+M");
 
             Ok(())
         })
@@ -143,6 +158,8 @@ pub fn run() {
             commands::telegram::get_telegram_status,
             // URL Meta
             commands::url_meta::fetch_url_meta,
+            // Shortcut
+            update_quick_capture_shortcut,
         ])
         .on_window_event(|window, event| {
             // macOS: hide window on close instead of quitting

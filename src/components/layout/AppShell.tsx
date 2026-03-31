@@ -29,6 +29,15 @@ export default function AppShell() {
 
   useEffect(() => {
     loadToday();
+    // Apply saved quick capture shortcut on login
+    import("../../lib/ipc").then(async (ipc) => {
+      const pairs = await ipc.getAllSettings();
+      const map: Record<string, string> = {};
+      for (const [k, v] of pairs) map[k] = v;
+      if (map.quick_capture_shortcut) {
+        ipc.updateQuickCaptureShortcut(map.quick_capture_shortcut);
+      }
+    });
   }, [loadToday]);
 
   // Keyboard shortcuts
