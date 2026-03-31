@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut } from "lucide-react";
+import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut, Send } from "lucide-react";
 import { motion } from "framer-motion";
 import * as ipc from "../../lib/ipc";
 import { useAuthStore } from "../../stores/authStore";
 
-type Section = "account" | "ai" | "writing" | "display" | "data" | "about";
+type Section = "account" | "ai" | "telegram" | "writing" | "display" | "data" | "about";
 
 export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
@@ -22,6 +22,11 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const [accountError, setAccountError] = useState("");
   const [accountSuccess, setAccountSuccess] = useState("");
   const [wrongPwAction, setWrongPwAction] = useState("public");
+  const [tgToken, setTgToken] = useState("");
+  const [tgRunning, setTgRunning] = useState(false);
+  const [tgUsername, setTgUsername] = useState<string | null>(null);
+  const [tgError, setTgError] = useState("");
+  const [tgLoading, setTgLoading] = useState(false);
   const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
@@ -31,6 +36,10 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
       setSettings(map);
     });
     ipc.getWrongPasswordAction().then(setWrongPwAction);
+    ipc.getTelegramStatus().then((s) => {
+      setTgRunning(s.running);
+      setTgUsername(s.bot_username);
+    });
   }, []);
 
   const updateSetting = async (key: string, value: string) => {
@@ -41,6 +50,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const sections: { id: Section; label: string; icon: React.FC<any> }[] = [
     { id: "account", label: t("settings.account"), icon: ShieldCheck },
     { id: "ai", label: t("settings.ai"), icon: Bot },
+    { id: "telegram", label: "Telegram", icon: Send },
     { id: "writing", label: t("settings.writing"), icon: PenLine },
     { id: "display", label: t("settings.display"), icon: Palette },
     { id: "data", label: t("settings.data"), icon: Database },
@@ -194,34 +204,49 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                 >
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
+                  <option value="google">Google Gemini</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="ollama">Ollama ({t("settings.aiLocal")})</option>
                   <option value="custom">{t("settings.aiCustom")}</option>
                 </select>
               </SettingItem>
-              <SettingItem label="API Key">
-                <input
-                  type="password"
-                  value={settings.ai_api_key || ""}
-                  onChange={(e) => updateSetting("ai_api_key", e.target.value)}
-                  placeholder="sk-..."
-                  className="text-sm border border-border rounded-lg px-2 py-1 w-48"
-                />
-              </SettingItem>
+              {settings.ai_provider !== "ollama" && (
+                <SettingItem label="API Key">
+                  <input
+                    type="password"
+                    value={settings.ai_api_key || ""}
+                    onChange={(e) => updateSetting("ai_api_key", e.target.value)}
+                    placeholder="sk-..."
+                    className="text-sm border border-border rounded-lg px-2 py-1 w-48"
+                  />
+                </SettingItem>
+              )}
               <SettingItem label={t("settings.aiModel")}>
                 <input
                   type="text"
                   value={settings.ai_model || ""}
                   onChange={(e) => updateSetting("ai_model", e.target.value)}
-                  placeholder={settings.ai_provider === "anthropic" ? "claude-sonnet-4-20250514" : "gpt-4o-mini"}
+                  placeholder={{
+                    anthropic: "claude-sonnet-4-20250514",
+                    google: "gemini-2.0-flash",
+                    deepseek: "deepseek-chat",
+                    ollama: "llama3.2",
+                    openai: "gpt-4o-mini",
+                    custom: "model-name",
+                  }[settings.ai_provider || "openai"] || "gpt-4o-mini"}
                   className="text-sm border border-border rounded-lg px-2 py-1 w-48"
                 />
               </SettingItem>
-              {(settings.ai_provider === "custom" || settings.ai_provider === "openai") && (
+              {["custom", "openai", "deepseek", "ollama"].includes(settings.ai_provider || "openai") && (
                 <SettingItem label="Base URL">
                   <input
                     type="text"
                     value={settings.ai_base_url || ""}
                     onChange={(e) => updateSetting("ai_base_url", e.target.value)}
-                    placeholder="https://api.openai.com/v1/chat/completions"
+                    placeholder={{
+                      ollama: "http://localhost:11434/v1/chat/completions",
+                      deepseek: "https://api.deepseek.com/v1/chat/completions",
+                    }[settings.ai_provider || ""] || "https://api.openai.com/v1/chat/completions"}
                     className="text-sm border border-border rounded-lg px-2 py-1 w-64"
                   />
                 </SettingItem>
@@ -233,6 +258,67 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   className="text-sm border border-border rounded-lg px-2 py-1 w-64 h-20 resize-none"
                 />
               </SettingItem>
+            </div>
+          )}
+
+          {activeSection === "telegram" && (
+            <div className="space-y-4">
+              <p className="text-xs text-text-hint mb-2">{t("settings.tgDesc")}</p>
+              <SettingItem label={t("settings.tgStatus")}>
+                <span className={`text-sm ${tgRunning ? "text-green-500" : "text-text-hint"}`}>
+                  {tgRunning ? `✅ @${tgUsername}` : t("settings.tgStopped")}
+                </span>
+              </SettingItem>
+              <SettingItem label="Bot Token">
+                <input
+                  type="password"
+                  value={tgToken || settings.telegram_bot_token || ""}
+                  onChange={(e) => setTgToken(e.target.value)}
+                  placeholder="123456:ABC-DEF..."
+                  className="text-sm border border-border rounded-lg px-2 py-1 w-64"
+                />
+              </SettingItem>
+              {tgError && <p className="text-xs text-red-400">{tgError}</p>}
+              <div className="flex gap-2">
+                {!tgRunning ? (
+                  <button
+                    onClick={async () => {
+                      const token = tgToken || settings.telegram_bot_token || "";
+                      if (!token.trim()) { setTgError(t("settings.tgTokenRequired")); return; }
+                      setTgLoading(true); setTgError("");
+                      try {
+                        const result = await ipc.startTelegramBot(token.trim());
+                        setTgRunning(result.running);
+                        setTgUsername(result.bot_username);
+                        setSettings((prev) => ({ ...prev, telegram_bot_token: token.trim() }));
+                      } catch (e: any) {
+                        setTgError(String(e));
+                      } finally { setTgLoading(false); }
+                    }}
+                    disabled={tgLoading}
+                    className="text-sm bg-accent text-white px-4 py-1.5 rounded-lg hover:bg-accent-hover disabled:opacity-50"
+                  >
+                    {tgLoading ? t("settings.tgConnecting") : t("settings.tgStart")}
+                  </button>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      await ipc.stopTelegramBot();
+                      setTgRunning(false);
+                      setTgUsername(null);
+                    }}
+                    className="text-sm bg-red-400 text-white px-4 py-1.5 rounded-lg hover:bg-red-500"
+                  >
+                    {t("settings.tgStop")}
+                  </button>
+                )}
+              </div>
+              <div className="mt-4 p-3 bg-warm-50 rounded-lg text-xs text-text-secondary space-y-1">
+                <p className="font-medium">{t("settings.tgHowTo")}</p>
+                <p>1. {t("settings.tgStep1")}</p>
+                <p>2. {t("settings.tgStep2")}</p>
+                <p>3. {t("settings.tgStep3")}</p>
+              </div>
             </div>
           )}
 

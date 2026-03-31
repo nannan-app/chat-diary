@@ -46,7 +46,7 @@ export default function MessageInput() {
     ipc.getAllSettings().then((pairs) => {
       const map: Record<string, string> = {};
       for (const [k, v] of pairs) map[k] = v;
-      setAiConfigured(!!(map.ai_api_key));
+      setAiConfigured(!!(map.ai_api_key || map.ai_provider === "ollama"));
     });
   }, []);
 

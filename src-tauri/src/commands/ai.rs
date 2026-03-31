@@ -65,7 +65,7 @@ pub async fn ai_summarize(
         return Err(MurmurError::General("今天还没有写日记内容".into()));
     }
 
-    if api_key.is_empty() {
+    if api_key.is_empty() && api_provider != "ollama" {
         return Err(MurmurError::General("Please configure AI API Key in settings".into()));
     }
 
@@ -81,6 +81,22 @@ pub async fn ai_summarize(
         "anthropic" => {
             let m = if model.is_empty() { "claude-sonnet-4-20250514".to_string() } else { model };
             call_anthropic(&api_key, &m, &system_prompt, &messages_text).await?
+        }
+        "google" => {
+            let m = if model.is_empty() { "gemini-2.0-flash".to_string() } else { model };
+            call_google_gemini(&api_key, &m, &system_prompt, &messages_text).await?
+        }
+        "deepseek" => {
+            let url = api_url.unwrap_or_else(|| "https://api.deepseek.com/v1/chat/completions".to_string());
+            let m = if model.is_empty() { "deepseek-chat".to_string() } else { model };
+            call_openai_compatible(&url, &api_key, &m, &system_prompt, &messages_text).await?
+        }
+        "ollama" => {
+            let url = api_url.unwrap_or_else(|| "http://localhost:11434/v1/chat/completions".to_string());
+            let m = if model.is_empty() { "llama3.2".to_string() } else { model };
+            // Ollama's OpenAI-compatible endpoint doesn't need an API key, pass "ollama" as placeholder
+            let key = if api_key.is_empty() { "ollama".to_string() } else { api_key };
+            call_openai_compatible(&url, &key, &m, &system_prompt, &messages_text).await?
         }
         _ => {
             // OpenAI-compatible (openai, custom, or any other)
@@ -140,6 +156,48 @@ async fn call_openai_compatible(
         .map_err(|e| MurmurError::General(format!("AI response parse failed: {}", e)))?;
 
     json["choices"][0]["message"]["content"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| MurmurError::General("AI returned empty response".into()))
+}
+
+async fn call_google_gemini(
+    api_key: &str,
+    model: &str,
+    system_prompt: &str,
+    user_content: &str,
+) -> Result<String, MurmurError> {
+    let client = reqwest::Client::new();
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+        model, api_key
+    );
+    let body = serde_json::json!({
+        "system_instruction": {
+            "parts": [{"text": system_prompt}]
+        },
+        "contents": [{
+            "parts": [{"text": user_content}]
+        }],
+        "generationConfig": {
+            "maxOutputTokens": 500
+        }
+    });
+
+    let resp = client
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| MurmurError::General(format!("AI request failed: {}", e)))?;
+
+    let json: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| MurmurError::General(format!("AI response parse failed: {}", e)))?;
+
+    json["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .map(|s| s.to_string())
         .ok_or_else(|| MurmurError::General("AI returned empty response".into()))
