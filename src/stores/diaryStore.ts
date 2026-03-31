@@ -42,7 +42,8 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
       set({ currentDay: day, messages, loading: false });
       // Also load the diary list for current month
       get().loadDiaryList(dayjs().year(), dayjs().month() + 1);
-    } catch {
+    } catch (e) {
+      console.error("[loadToday] Failed:", e);
       set({ currentDay: null, messages: [], loading: false });
     }
   },

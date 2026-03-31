@@ -93,6 +93,16 @@ export async function reactSetValueNth(
           : HTMLInputElement.prototype;
       const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
       setter?.call(el, val);
+
+      // Reset React's _valueTracker so it detects a change.
+      // React compares tracker.getValue() vs el.value — if equal, it
+      // ignores the event. Setting tracker to a different value forces
+      // React to fire onChange.
+      const tracker = (el as any)._valueTracker;
+      if (tracker) {
+        tracker.setValue(val === "" ? " " : "");
+      }
+
       el.dispatchEvent(new Event("input", { bubbles: true }));
       el.dispatchEvent(new Event("change", { bubbles: true }));
     },
@@ -223,4 +233,18 @@ export async function loginBeforeAll(password: string) {
   if (r.ok !== "private") {
     throw new Error(`Expected private space but got ${r.ok}`);
   }
+  // Wait for React to finish loading diary data.
+  // After login, AppShell mounts and calls loadToday() asynchronously.
+  // We wait until the "加载中" text disappears OR a textarea appears.
+  await browser.waitUntil(
+    async () => {
+      return browser.execute(() => {
+        const html = document.body.innerHTML;
+        // Loading done when either: messages loaded, empty state (🐱), or textarea visible
+        return !html.includes("加载中") || !!document.querySelector("textarea");
+      });
+    },
+    { timeout: 15000, timeoutMsg: "App still loading after login" }
+  );
+  await shortWait(1000);
 }

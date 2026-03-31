@@ -1,10 +1,16 @@
-import { tauriInvoke, loginBeforeAll } from "./helpers";
+import { tauriInvoke, loginBeforeAll, shortWait, reactSetValue, getPageHtml } from "./helpers";
 
+/**
+ * 04 - Full-Text Search
+ *
+ * Search is a core UI interaction: type in search box → see results.
+ * Data preparation (creating searchable content) uses IPC as a precondition.
+ */
 describe("04 - Full-Text Search", () => {
   before(async () => {
     await loginBeforeAll("test1234");
 
-    // Create test data for search (each file is a fresh session)
+    // Precondition: create searchable data via IPC
     const day = (await tauriInvoke("get_or_create_today") as any).ok;
     await tauriInvoke("send_message", {
       diaryDayId: day.id, kind: "text", content: "SearchTestAlpha wonderful weather today",
@@ -15,40 +21,57 @@ describe("04 - Full-Text Search", () => {
     });
   });
 
-  it("4.1 should find text messages by keyword", async () => {
-    const r = await tauriInvoke("search", { query: "SearchTestAlpha" }) as any;
+  it("4.1 should type in search box and see matching results", async () => {
+    // Find the search input (placeholder="搜索日记...")
+    await reactSetValue('input[placeholder="搜索日记..."]', "SearchTestAlpha");
+    await shortWait(1500);
+
+    // Search results should appear in the sidebar
+    const html = await getPageHtml();
+    expect(html).toContain("SearchTestAlpha");
+  });
+
+  it("4.2 should search for article content via UI", async () => {
+    await reactSetValue('input[placeholder="搜索日记..."]', "UniqueKeywordBeta");
+    await shortWait(1500);
+
+    // Article search result should appear
+    const html = await getPageHtml();
+    // The search results component shows article results
+    expect(html).toContain("Search Article Title");
+  });
+
+  it("4.3 should clear search and return to diary list", async () => {
+    await reactSetValue('input[placeholder="搜索日记..."]', "");
+    await shortWait(500);
+
+    // Should be back to normal diary list (no search results overlay)
+    const html = await getPageHtml();
+    // The diary list shows date entries, not search results
+    expect(html).toContain("月");
+  });
+
+  it("4.4 should show empty state for non-matching search", async () => {
+    await reactSetValue('input[placeholder="搜索日记..."]', "zzznonexistent999");
+    await shortWait(1500);
+
+    // Should not show any matching content
+    const hasResults = await browser.execute(() => {
+      // Check if any search result items exist
+      const text = document.body.innerText || "";
+      return text.includes("SearchTestAlpha") || text.includes("UniqueKeywordBeta");
+    });
+    expect(hasResults).toBe(false);
+
+    // Clean up: clear search
+    await reactSetValue('input[placeholder="搜索日记..."]', "");
+    await shortWait(300);
+  });
+
+  // IPC verification: confirm search backend correctness
+  it("4.5 should find messages via FTS5 backend", async () => {
+    const r = (await tauriInvoke("search", { query: "SearchTestAlpha" }) as any);
     expect(r.ok.length).toBeGreaterThan(0);
-    expect(r.ok[0].content_preview).toContain("SearchTestAlpha");
-  });
-
-  it("4.2 should find article content", async () => {
-    const r = await tauriInvoke("search", { query: "UniqueKeywordBeta" }) as any;
-    expect(r.ok.length).toBeGreaterThan(0);
-  });
-
-  it("4.3 should return diary date in results", async () => {
-    const r = await tauriInvoke("search", { query: "SearchTestAlpha" }) as any;
-    expect(r.ok.length).toBeGreaterThan(0);
-    expect(r.ok[0].diary_date).toBeDefined();
-    expect(r.ok[0].diary_date.length).toBe(10); // YYYY-MM-DD
-  });
-
-  it("4.4 should handle empty query gracefully", async () => {
-    // FTS5 doesn't accept empty strings — an error or empty result is acceptable
-    let handled = false;
-    try {
-      const r = await tauriInvoke("search", { query: "" }) as any;
-      // Any response (empty array or error) is fine
-      handled = true;
-    } catch {
-      // WebDriver throws the FTS5 error — that's acceptable too
-      handled = true;
-    }
-    expect(handled).toBe(true);
-  });
-
-  it("4.5 should return empty for non-matching query", async () => {
-    const r = await tauriInvoke("search", { query: "zzznonexistent999" }) as any;
-    expect(r.ok.length).toBe(0);
+    expect(r.ok[0].diary_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

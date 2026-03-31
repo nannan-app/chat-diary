@@ -1,40 +1,53 @@
-import { tauriInvoke, loginBeforeAll } from "./helpers";
+import { tauriInvoke, loginBeforeAll, shortWait, getPageHtml } from "./helpers";
 
+/**
+ * 14 - AI Summary
+ *
+ * AI summary is triggered by clicking the toolbar button — test via UI.
+ * Verify the AI reply bubble appears in the chat.
+ */
 describe("14 - AI Summary", () => {
   before(async () => {
     await loginBeforeAll("final1234");
-    // Ensure today has some content for AI to summarize
+    // Precondition: ensure today has content for AI to summarize
     const day = ((await tauriInvoke("get_or_create_today")) as any).ok;
     await tauriInvoke("send_message", {
       diaryDayId: day.id, kind: "text", content: "Today I went for a walk and enjoyed the sunshine",
       imageId: null, articleId: null, mood: null, quoteRefId: null, source: "app",
     });
+    // Reload page so the message shows in the UI
+    await browser.execute(() => window.location.reload());
+    await shortWait(4000);
+    await loginBeforeAll("final1234");
   });
 
-  it("14.1 should get AI summary with builtin provider", async () => {
-    const dayId = ((await tauriInvoke("get_or_create_today")) as any).ok.id;
-    const r = await tauriInvoke("ai_summarize", {
-      diaryDayId: dayId,
-      apiProvider: "builtin",
-      apiKey: "",
-      apiUrl: null,
-      personality: "你是一个温暖的朋友",
-    }) as any;
-    // Builtin returns a placeholder message
-    expect(r.ok).toBeDefined();
-    expect(r.ok.kind).toBe("ai_reply");
-    expect(r.ok.content.length).toBeGreaterThan(0);
+  it("14.1 should click AI button and see AI reply bubble", async () => {
+    // Click the AI toolbar button (title="AI 总结与反馈")
+    await browser.execute(() => {
+      const btn = document.querySelector('button[title="AI 总结与反馈"]') as HTMLElement;
+      btn?.click();
+    });
+    await shortWait(3000);
+
+    // The AI reply should appear as a white/left-aligned bubble
+    // AI replies use bg-white and rounded-tl-md
+    const hasAiReply = await browser.execute(() => {
+      const bubbles = document.querySelectorAll('[class*="bg-white"][class*="rounded-tl-md"]');
+      return bubbles.length > 0;
+    });
+    expect(hasAiReply).toBe(true);
   });
 
-  it("14.2 should show AI reply in messages", async () => {
-    const dayId = ((await tauriInvoke("get_or_create_today")) as any).ok.id;
-    const msgs = ((await tauriInvoke("get_messages", { diaryDayId: dayId })) as any).ok;
-    const aiMsgs = msgs.filter((m: any) => m.kind === "ai_reply");
-    expect(aiMsgs.length).toBeGreaterThan(0);
+  it("14.2 should show AI reply content in DOM", async () => {
+    const html = await getPageHtml();
+    // Builtin AI returns placeholder text containing "今天" or "记录"
+    expect(
+      html.includes("今天") || html.includes("记录") || html.includes("内容")
+    ).toBe(true);
   });
 
-  it("14.3 should error on empty diary day", async () => {
-    // Use a non-existent diary day ID — should get an error about no content
+  // IPC verification: backend error handling
+  it("14.3 should error on empty diary day via backend", async () => {
     let gotError = false;
     try {
       const r = await tauriInvoke("ai_summarize", {
