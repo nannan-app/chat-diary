@@ -24,6 +24,7 @@ export default function LoginScreen() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [newRecoveryCode, setNewRecoveryCode] = useState("");
   const login = useAuthStore((s) => s.login);
+  const loginDenied = useAuthStore((s) => s.loginDenied);
 
   useEffect(() => {
     getPasswordHint().then(setHint);
@@ -87,6 +88,9 @@ export default function LoginScreen() {
                        focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30
                        transition-all duration-200"
           />
+          {loginDenied && (
+            <p className="text-xs text-red-400">{t("auth.wrongPassword")}</p>
+          )}
           <button
             type="submit"
             className="w-64 py-2.5 rounded-xl bg-accent text-white font-medium

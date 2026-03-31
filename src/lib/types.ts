@@ -74,7 +74,7 @@ export interface SearchResult {
 }
 
 export interface LoginResult {
-  space: "private" | "public" | "none";
+  space: "private" | "public" | "none" | "denied";
   is_first_time: boolean;
 }
 

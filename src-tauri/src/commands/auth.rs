@@ -86,6 +86,15 @@ pub fn login(state: State<AppState>, password: String) -> Result<LoginResult, Mu
     let mut nonce_arr = [0u8; 12];
     nonce_arr.copy_from_slice(&nonce);
 
+    // Read wrong_password_action setting
+    let wrong_pw_action: String = private_conn
+        .query_row(
+            "SELECT wrong_password_action FROM key_store WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "public".to_string());
+
     // Try to unlock with password
     match mk::try_unlock_with_password(&password, &wrapped_key, &salt_arr, &nonce_arr) {
         Ok(master_key) => {
@@ -105,16 +114,24 @@ pub fn login(state: State<AppState>, password: String) -> Result<LoginResult, Mu
             })
         }
         Err(_) => {
-            // Wrong password → public space (no error shown)
-            let public_conn = connection::open_or_create(&public_db_path)?;
-            *state.public_db.lock().unwrap() = Some(public_conn);
-            *state.space.lock().unwrap() = SpaceType::Public;
-            *state.is_setup.lock().unwrap() = true;
+            if wrong_pw_action == "deny" {
+                // Wrong password → deny access
+                Ok(LoginResult {
+                    space: "denied".to_string(),
+                    is_first_time: false,
+                })
+            } else {
+                // Wrong password → public space (no error shown)
+                let public_conn = connection::open_or_create(&public_db_path)?;
+                *state.public_db.lock().unwrap() = Some(public_conn);
+                *state.space.lock().unwrap() = SpaceType::Public;
+                *state.is_setup.lock().unwrap() = true;
 
-            Ok(LoginResult {
-                space: "public".to_string(),
-                is_first_time: false,
-            })
+                Ok(LoginResult {
+                    space: "public".to_string(),
+                    is_first_time: false,
+                })
+            }
         }
     }
 }
@@ -314,6 +331,40 @@ pub fn regenerate_recovery_code(
     )?;
 
     Ok(new_recovery_code)
+}
+
+/// Get wrong password action setting
+#[tauri::command]
+pub fn get_wrong_password_action(state: State<AppState>) -> Result<String, MurmurError> {
+    let conn_lock = state.private_db.lock().unwrap();
+    let conn = conn_lock.as_ref().ok_or(MurmurError::NotAuthenticated)?;
+
+    let action: String = conn
+        .query_row(
+            "SELECT wrong_password_action FROM key_store WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "public".to_string());
+
+    Ok(action)
+}
+
+/// Set wrong password action: "public" (enter public notebook) or "deny" (reject login)
+#[tauri::command]
+pub fn set_wrong_password_action(
+    state: State<AppState>,
+    action: String,
+) -> Result<(), MurmurError> {
+    let conn_lock = state.private_db.lock().unwrap();
+    let conn = conn_lock.as_ref().ok_or(MurmurError::NotAuthenticated)?;
+
+    conn.execute(
+        "UPDATE key_store SET wrong_password_action = ?1, updated_at = datetime('now', 'localtime') WHERE id = 1",
+        rusqlite::params![action],
+    )?;
+
+    Ok(())
 }
 
 /// Update password hint only

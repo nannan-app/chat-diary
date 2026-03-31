@@ -7,6 +7,7 @@ interface AuthState {
   isFirstTime: boolean | null;
   spaceType: SpaceType | null;
   loading: boolean;
+  loginDenied: boolean;
 
   canSwitchSpace: boolean;
   checkSetup: () => Promise<void>;
@@ -21,6 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isFirstTime: null,
   spaceType: null,
   canSwitchSpace: false,
+  loginDenied: false,
   loading: true,
 
   checkSetup: async () => {
@@ -32,9 +34,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     const result = await ipc.login(password);
     if (result.is_first_time) {
       set({ isFirstTime: true });
+    } else if (result.space === "denied") {
+      set({ loginDenied: true });
     } else {
       set({
         isLoggedIn: true,
+        loginDenied: false,
         spaceType: result.space as SpaceType,
         isFirstTime: false,
         canSwitchSpace: result.space === "private",

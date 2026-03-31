@@ -54,6 +54,8 @@ pub fn run() {
             commands::auth::reset_password_with_recovery,
             commands::auth::regenerate_recovery_code,
             commands::auth::update_password_hint,
+            commands::auth::get_wrong_password_action,
+            commands::auth::set_wrong_password_action,
             // Diary
             commands::diary::get_or_create_today,
             commands::diary::get_diary_day,

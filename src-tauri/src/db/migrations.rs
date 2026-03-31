@@ -1,7 +1,7 @@
 use rusqlite::Connection;
 use crate::error::MurmurError;
 
-const CURRENT_VERSION: i32 = 2;
+const CURRENT_VERSION: i32 = 3;
 
 pub fn run_migrations(conn: &Connection) -> Result<(), MurmurError> {
     conn.execute_batch("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')))")?;
@@ -20,6 +20,10 @@ pub fn run_migrations(conn: &Connection) -> Result<(), MurmurError> {
 
     if version < 2 {
         migrate_v2(conn)?;
+    }
+
+    if version < 3 {
+        migrate_v3(conn)?;
     }
 
     Ok(())
@@ -175,6 +179,17 @@ fn migrate_v1(conn: &Connection) -> Result<(), MurmurError> {
         ",
     )?;
 
+    Ok(())
+}
+
+fn migrate_v3(conn: &Connection) -> Result<(), MurmurError> {
+    conn.execute_batch(
+        "
+        ALTER TABLE key_store ADD COLUMN wrong_password_action TEXT NOT NULL DEFAULT 'public';
+
+        INSERT INTO schema_version (version) VALUES (3);
+        "
+    )?;
     Ok(())
 }
 

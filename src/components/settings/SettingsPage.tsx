@@ -21,6 +21,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const [recoveryCode, setRecoveryCode] = useState("");
   const [accountError, setAccountError] = useState("");
   const [accountSuccess, setAccountSuccess] = useState("");
+  const [wrongPwAction, setWrongPwAction] = useState("public");
   const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
       for (const [k, v] of pairs) map[k] = v;
       setSettings(map);
     });
+    ipc.getWrongPasswordAction().then(setWrongPwAction);
   }, []);
 
   const updateSetting = async (key: string, value: string) => {
@@ -161,6 +163,24 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               <SettingItem label={t("settings.birthday")}>
                 <input type="date" value={settings.birthday || ""} onChange={(e) => updateSetting("birthday", e.target.value)} className="text-sm border border-border rounded-lg px-2 py-1" />
               </SettingItem>
+
+              <SettingItem label={t("settings.wrongPasswordAction")}>
+                <select
+                  value={wrongPwAction}
+                  onChange={async (e) => {
+                    const val = e.target.value;
+                    await ipc.setWrongPasswordAction(val);
+                    setWrongPwAction(val);
+                  }}
+                  className="text-sm border border-border rounded-lg px-2 py-1"
+                >
+                  <option value="public">{t("settings.wrongPwPublic")}</option>
+                  <option value="deny">{t("settings.wrongPwDeny")}</option>
+                </select>
+              </SettingItem>
+              <p className="text-xs text-text-hint pl-1 -mt-2">
+                {wrongPwAction === "public" ? t("settings.wrongPwPublicDesc") : t("settings.wrongPwDenyDesc")}
+              </p>
             </div>
           )}
 

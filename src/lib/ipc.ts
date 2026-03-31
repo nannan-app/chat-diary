@@ -128,6 +128,10 @@ export const regenerateRecoveryCode = () =>
   invoke<string>("regenerate_recovery_code");
 export const updatePasswordHint = (hint?: string) =>
   invoke<void>("update_password_hint", { hint: hint ?? null });
+export const getWrongPasswordAction = () =>
+  invoke<string>("get_wrong_password_action");
+export const setWrongPasswordAction = (action: string) =>
+  invoke<void>("set_wrong_password_action", { action });
 
 // Diary - extended
 export const getRandomDiaryDay = () =>
