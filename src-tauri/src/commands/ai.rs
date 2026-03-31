@@ -69,16 +69,7 @@ pub async fn ai_summarize(
         return Err(MurmurError::General("Please configure AI API Key in settings".into()));
     }
 
-    // Build AI prompt
-    let system_prompt = format!(
-        "{}\n\n你是「喃喃」日记 App 的 AI 伙伴。用户刚刚写完了今天的日记，请你：\n\
-        1. 真诚地回应用户今天经历的情绪和事件，像一个懂 ta 的老朋友\n\
-        2. 可以轻轻提一句你注意到的亮点或值得珍惜的瞬间\n\
-        3. 如果用户情绪低落，给予温柔的共情而非说教\n\
-        4. 语气自然随和，不要像客服，不要用「亲」「您」\n\
-        5. 控制在 2-3 段，简短有温度即可",
-        personality
-    );
+    let system_prompt = personality;
 
     // Call AI API based on provider
     let model = api_model.unwrap_or_default();
