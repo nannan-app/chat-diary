@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
-import { FileText } from "lucide-react";
+import { FileText, ChevronDown, ChevronRight, Brain } from "lucide-react";
 import type { Message } from "../../lib/types";
 import { useUIStore } from "../../stores/uiStore";
 import { SOURCE_ICONS } from "../../lib/constants";
@@ -151,6 +151,74 @@ export default function MessageBubble({ message }: Props) {
       </p>
     </div>
   ) : null;
+
+  // Parse AI reply content (may contain thinking + text as JSON)
+  const aiContent = useMemo(() => {
+    if (message.kind !== "ai_reply" || !message.content) return null;
+    try {
+      const parsed = JSON.parse(message.content);
+      if (parsed && typeof parsed.text === "string") {
+        return { text: parsed.text, thinking: parsed.thinking || null };
+      }
+    } catch {
+      // Legacy plain-text AI reply
+    }
+    return null;
+  }, [message.kind, message.content]);
+
+  const [showThinking, setShowThinking] = useState(false);
+
+  // AI reply with thinking support
+  if (aiContent) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        className={`flex justify-start mb-2 px-4 ${highlightClass}`}
+        data-message-id={message.id}
+        onContextMenu={handleContextMenu}
+      >
+        <div className="max-w-[70%] items-start flex flex-col">
+          {quoteBlock}
+          <div className="bg-white text-text-primary rounded-2xl rounded-tl-md shadow-sm overflow-hidden">
+            {aiContent.thinking && (
+              <div className="border-b border-border/30">
+                <button
+                  onClick={() => setShowThinking(!showThinking)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-hint hover:text-text-secondary transition-colors w-full"
+                >
+                  <Brain className="w-3 h-3" />
+                  {t("diary.ai.thinking")}
+                  {showThinking ? <ChevronDown className="w-3 h-3 ml-auto" /> : <ChevronRight className="w-3 h-3 ml-auto" />}
+                </button>
+                <AnimatePresence>
+                  {showThinking && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-3 pb-2 text-xs text-text-hint leading-relaxed whitespace-pre-wrap select-text max-h-40 overflow-y-auto">
+                        {aiContent.thinking}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+            <div className="px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words select-text">
+              {aiContent.text}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="text-xs text-text-hint">{time}</span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   // Text message (and default)
   return (

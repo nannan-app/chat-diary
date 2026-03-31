@@ -71,13 +71,18 @@ pub async fn ai_summarize(
 
     // Build AI prompt
     let system_prompt = format!(
-        "{}。请阅读用户今天的日记内容，给出温暖的总结和反馈。不要太长，2-3段即可。",
+        "{}\n\n你是「喃喃」日记 App 的 AI 伙伴。用户刚刚写完了今天的日记，请你：\n\
+        1. 真诚地回应用户今天经历的情绪和事件，像一个懂 ta 的老朋友\n\
+        2. 可以轻轻提一句你注意到的亮点或值得珍惜的瞬间\n\
+        3. 如果用户情绪低落，给予温柔的共情而非说教\n\
+        4. 语气自然随和，不要像客服，不要用「亲」「您」\n\
+        5. 控制在 2-3 段，简短有温度即可",
         personality
     );
 
     // Call AI API based on provider
     let model = api_model.unwrap_or_default();
-    let ai_reply = match api_provider.as_str() {
+    let ai_reply: AiReply = match api_provider.as_str() {
         "anthropic" => {
             let m = if model.is_empty() { "claude-sonnet-4-20250514".to_string() } else { model };
             call_anthropic(&api_key, &m, &system_prompt, &messages_text).await?
@@ -104,25 +109,26 @@ pub async fn ai_summarize(
         "ollama" => {
             let url = api_url.unwrap_or_else(|| "http://localhost:11434/v1/chat/completions".to_string());
             let m = if model.is_empty() { "llama3.2".to_string() } else { model };
-            // Ollama's OpenAI-compatible endpoint doesn't need an API key, pass "ollama" as placeholder
             let key = if api_key.is_empty() { "ollama".to_string() } else { api_key };
             call_openai_compatible(&url, &key, &m, &system_prompt, &messages_text).await?
         }
         _ => {
-            // OpenAI-compatible (openai, custom, or any other)
             let url = api_url.unwrap_or_else(|| "https://api.openai.com/v1/chat/completions".to_string());
             let m = if model.is_empty() { "gpt-4o-mini".to_string() } else { model };
             call_openai_compatible(&url, &api_key, &m, &system_prompt, &messages_text).await?
         }
     };
 
-    // Insert AI reply as message
+    // Insert AI reply as message (content is JSON with thinking/text)
+    let content_str = serde_json::to_string(&ai_reply)
+        .unwrap_or_else(|_| ai_reply.text.clone());
+
     let message = with_db(&state, |conn| {
         diary_repo::insert_message(
             conn,
             diary_day_id,
             "ai_reply",
-            Some(&ai_reply),
+            Some(&content_str),
             None,
             None,
             None,
@@ -134,13 +140,19 @@ pub async fn ai_summarize(
     Ok(message)
 }
 
+#[derive(serde::Serialize)]
+struct AiReply {
+    text: String,
+    thinking: Option<String>,
+}
+
 async fn call_openai_compatible(
     url: &str,
     api_key: &str,
     model: &str,
     system_prompt: &str,
     user_content: &str,
-) -> Result<String, MurmurError> {
+) -> Result<AiReply, MurmurError> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
         "model": model,
@@ -173,10 +185,12 @@ async fn call_openai_compatible(
         return Err(MurmurError::General(format!("API {} error: {}", status.as_u16(), err_msg)));
     }
 
-    json["choices"][0]["message"]["content"]
+    let text = json["choices"][0]["message"]["content"]
         .as_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))
+        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))?;
+
+    Ok(AiReply { text, thinking: None })
 }
 
 async fn call_google_gemini(
@@ -184,7 +198,7 @@ async fn call_google_gemini(
     model: &str,
     system_prompt: &str,
     user_content: &str,
-) -> Result<String, MurmurError> {
+) -> Result<AiReply, MurmurError> {
     let client = reqwest::Client::new();
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
@@ -221,21 +235,59 @@ async fn call_google_gemini(
         return Err(MurmurError::General(format!("API {} error: {}", status.as_u16(), err_msg)));
     }
 
-    json["candidates"][0]["content"]["parts"][0]["text"]
+    let text = json["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))
+        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))?;
+
+    Ok(AiReply { text, thinking: None })
 }
 
 /// Anthropic Messages API compatible endpoint (used by MiniMax etc.)
 /// Uses Bearer auth instead of x-api-key header.
+/// Extract text and thinking from Anthropic-format content array.
+/// Handles both `[{type: "text", text: "..."}]` and `[{type: "thinking", thinking: "..."}, {type: "text", text: "..."}]`.
+fn extract_anthropic_content(json: &serde_json::Value) -> Result<AiReply, MurmurError> {
+    let content = json["content"].as_array()
+        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))?;
+
+    let mut text = String::new();
+    let mut thinking = String::new();
+
+    for block in content {
+        let block_type = block["type"].as_str().unwrap_or("");
+        match block_type {
+            "text" => {
+                if let Some(t) = block["text"].as_str() {
+                    text.push_str(t);
+                }
+            }
+            "thinking" => {
+                if let Some(t) = block["thinking"].as_str() {
+                    thinking.push_str(t);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    if text.is_empty() {
+        return Err(MurmurError::General(format!("AI returned unexpected response: {}", json)));
+    }
+
+    Ok(AiReply {
+        text,
+        thinking: if thinking.is_empty() { None } else { Some(thinking) },
+    })
+}
+
 async fn call_anthropic_compatible(
     url: &str,
     api_key: &str,
     model: &str,
     system_prompt: &str,
     user_content: &str,
-) -> Result<String, MurmurError> {
+) -> Result<AiReply, MurmurError> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
         "model": model,
@@ -269,10 +321,7 @@ async fn call_anthropic_compatible(
         return Err(MurmurError::General(format!("API {} error: {}", status.as_u16(), err_msg)));
     }
 
-    json["content"][0]["text"]
-        .as_str()
-        .map(|s| s.to_string())
-        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))
+    extract_anthropic_content(&json)
 }
 
 async fn call_anthropic(
@@ -280,7 +329,7 @@ async fn call_anthropic(
     model: &str,
     system_prompt: &str,
     user_content: &str,
-) -> Result<String, MurmurError> {
+) -> Result<AiReply, MurmurError> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
         "model": model,
@@ -314,8 +363,5 @@ async fn call_anthropic(
         return Err(MurmurError::General(format!("API {} error: {}", status.as_u16(), err_msg)));
     }
 
-    json["content"][0]["text"]
-        .as_str()
-        .map(|s| s.to_string())
-        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))
+    extract_anthropic_content(&json)
 }
