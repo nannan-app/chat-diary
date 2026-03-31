@@ -30,7 +30,6 @@ export default function ChatView() {
     }
   }, [messages.length, selectedDate, loading]);
 
-  const isToday = selectedDate === dayjs().format("YYYY-MM-DD");
   const prompts = getDailyPrompts();
   const dailyPrompt = prompts[new Date(selectedDate).getDate() % prompts.length];
 
@@ -88,7 +87,7 @@ export default function ChatView() {
       </div>
 
       {/* Input */}
-      {isToday && <MessageInput />}
+      <MessageInput />
     </div>
     </ImageDropZone>
   );

@@ -14,7 +14,7 @@ export default function MessageBubble({ message }: Props) {
   const { t } = useTranslation();
   const showContextMenu = useUIStore((s) => s.showContextMenu);
   const isUser = message.kind !== "ai_reply";
-  const time = dayjs(message.created_at).format("HH:mm");
+  const time = dayjs(message.created_at).format("YYYY-MM-DD HH:mm");
   const sourceIcon = SOURCE_ICONS[message.source] || "";
 
   const handleContextMenu = (e: React.MouseEvent) => {
