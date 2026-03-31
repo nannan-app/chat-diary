@@ -34,6 +34,7 @@ fn register_quick_capture_shortcut(app_handle: &tauri::AppHandle, shortcut: &str
                     .inner_size(480.0, 72.0)
                     .resizable(false)
                     .decorations(false)
+                    .transparent(true)
                     .always_on_top(true)
                     .center()
                     .visible(true)

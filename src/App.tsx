@@ -12,6 +12,8 @@ export default function App() {
 
   // Quick capture window — render only the input, skip auth
   if (window.location.hash === "#/quick-capture") {
+    document.body.style.background = "transparent";
+    document.documentElement.style.background = "transparent";
     return <QuickCapture />;
   }
 
