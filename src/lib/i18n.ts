@@ -83,6 +83,8 @@ const resources = {
       "toolbar.mood": "心情",
       "toolbar.ai": "AI 总结与反馈",
       "toolbar.aiNotConfigured": "请先在设置中配置 AI API Key",
+      "toolbar.aiLoading": "AI 正在思考中...",
+      "toolbar.aiError": "AI 总结失败",
       "toolbar.tag": "标签",
       "toolbar.article": "长文",
       // Context menu
@@ -387,6 +389,8 @@ const resources = {
       "toolbar.mood": "Mood",
       "toolbar.ai": "AI Summary",
       "toolbar.aiNotConfigured": "Please configure AI API Key in Settings first",
+      "toolbar.aiLoading": "AI is thinking...",
+      "toolbar.aiError": "AI summary failed",
       "toolbar.tag": "Tags",
       "toolbar.article": "Article",
       "menu.quote": "Quote",

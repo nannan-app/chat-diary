@@ -17,6 +17,8 @@ export default function MessageInput() {
   const [showMoodPanel, setShowMoodPanel] = useState(false);
   const [showTagPanel, setShowTagPanel] = useState(false);
   const [aiConfigured, setAiConfigured] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [inputHeight, setInputHeight] = useState(80);
@@ -85,9 +87,11 @@ export default function MessageInput() {
   };
 
   const handleAiSummarize = async () => {
-    if (!aiConfigured) return;
+    if (!aiConfigured || aiLoading) return;
     const currentDay = useDiaryStore.getState().currentDay;
     if (!currentDay) return;
+    setAiLoading(true);
+    setAiError(null);
     try {
       const settings = await ipc.getAllSettings();
       const settingsMap: Record<string, string> = {};
@@ -109,8 +113,12 @@ export default function MessageInput() {
       useDiaryStore.setState((state) => ({
         messages: [...state.messages, message],
       }));
-    } catch (e) {
+    } catch (e: any) {
       console.log("AI summarize error:", e);
+      setAiError(String(e));
+      setTimeout(() => setAiError(null), 6000);
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -250,11 +258,12 @@ export default function MessageInput() {
         </button>
         <button
           onClick={handleAiSummarize}
-          disabled={!aiConfigured}
+          disabled={!aiConfigured || aiLoading}
           className={`p-1.5 rounded-lg transition-colors text-sm ${
+            aiLoading ? "animate-pulse text-accent" :
             aiConfigured ? "hover:bg-warm-100" : "opacity-40 cursor-not-allowed"
           }`}
-          title={aiConfigured ? t("toolbar.ai") : t("toolbar.aiNotConfigured")}
+          title={aiLoading ? t("toolbar.aiLoading") : aiConfigured ? t("toolbar.ai") : t("toolbar.aiNotConfigured")}
         >
           <Bot className="w-4 h-4" />
         </button>
@@ -304,7 +313,7 @@ export default function MessageInput() {
         )}
       </AnimatePresence>
 
-      {/* Upload error toast */}
+      {/* Error toasts */}
       <AnimatePresence>
         {uploadError && (
           <motion.div
@@ -315,6 +324,31 @@ export default function MessageInput() {
           >
             <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2">
               {uploadError}
+            </div>
+          </motion.div>
+        )}
+        {aiError && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="px-3 py-1.5"
+          >
+            <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2">
+              {t("toolbar.aiError")}: {aiError}
+            </div>
+          </motion.div>
+        )}
+        {aiLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="px-3 py-1.5"
+          >
+            <div className="bg-accent/10 border border-accent/20 text-accent text-xs rounded-lg px-3 py-2 flex items-center gap-2">
+              <span className="inline-block w-3 h-3 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+              {t("toolbar.aiLoading")}
             </div>
           </motion.div>
         )}
