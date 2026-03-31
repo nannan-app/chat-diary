@@ -9,6 +9,19 @@ export default function QuickCapture() {
 
   useEffect(() => {
     inputRef.current?.focus();
+    // Global Esc listener for the whole window
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        getCurrentWindow().hide();
+      }
+    };
+    const onBlur = () => getCurrentWindow().hide();
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("blur", onBlur);
+    };
   }, []);
 
   const handleSubmit = async () => {
