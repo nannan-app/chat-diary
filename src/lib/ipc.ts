@@ -141,6 +141,10 @@ export const stopTelegramBot = () =>
 export const getTelegramStatus = () =>
   invoke<{ running: boolean; bot_username: string | null }>("get_telegram_status");
 
+// URL Meta
+export const fetchUrlMeta = (url: string) =>
+  invoke<{ url: string; title: string | null; description: string | null; image: string | null; site_name: string | null }>("fetch_url_meta", { url });
+
 // Diary - extended
 export const getRandomDiaryDay = () =>
   invoke<DiaryDay | null>("get_random_diary_day");

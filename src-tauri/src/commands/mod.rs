@@ -8,3 +8,4 @@ pub mod stats;
 pub mod ai;
 pub mod export;
 pub mod telegram;
+pub mod url_meta;

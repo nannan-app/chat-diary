@@ -2,11 +2,11 @@ import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
-import { FileText, ChevronDown, ChevronRight, Brain } from "lucide-react";
+import { FileText, ChevronDown, ChevronRight, Brain, Bot } from "lucide-react";
 import type { Message } from "../../lib/types";
 import { useUIStore } from "../../stores/uiStore";
 import { SOURCE_ICONS } from "../../lib/constants";
-import aiAvatar from "../../assets/icons/badges/ai_first.png";
+import LinkPreview, { extractUrls } from "./LinkPreview";
 
 interface Props {
   message: Message;
@@ -181,7 +181,9 @@ export default function MessageBubble({ message }: Props) {
         onContextMenu={handleContextMenu}
       >
         <div className="flex gap-2 max-w-[75%]">
-        <img src={aiAvatar} alt="AI" className="w-7 h-7 rounded-full flex-shrink-0 mt-1" />
+        <div className="w-7 h-7 rounded-full flex-shrink-0 mt-1 bg-accent/15 flex items-center justify-center">
+            <Bot className="w-4 h-4 text-accent" />
+          </div>
         <div className="items-start flex flex-col flex-1 min-w-0">
           {quoteBlock}
           <div className="bg-white text-text-primary rounded-2xl rounded-tl-md shadow-sm overflow-hidden">
@@ -236,7 +238,9 @@ export default function MessageBubble({ message }: Props) {
     >
       <div className={`max-w-[70%] ${isUser ? "items-end" : "items-start"} flex ${!isUser && message.kind === "ai_reply" ? "gap-2" : "flex-col"}`}>
         {!isUser && message.kind === "ai_reply" && (
-          <img src={aiAvatar} alt="AI" className="w-7 h-7 rounded-full flex-shrink-0 mt-1" />
+          <div className="w-7 h-7 rounded-full flex-shrink-0 mt-1 bg-accent/15 flex items-center justify-center">
+            <Bot className="w-4 h-4 text-accent" />
+          </div>
         )}
         <div className="flex flex-col">
           {quoteBlock}
@@ -250,6 +254,9 @@ export default function MessageBubble({ message }: Props) {
           >
             {message.content}
           </div>
+          {message.kind === "text" && message.content && extractUrls(message.content).map((url) => (
+            <LinkPreview key={url} url={url} />
+          ))}
           <div className={`flex items-center gap-1 mt-0.5 ${isUser ? "flex-row-reverse" : ""}`}>
             <span className="text-xs text-text-hint">{time}</span>
             {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}

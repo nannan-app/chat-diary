@@ -7,6 +7,7 @@ mod state;
 mod telegram;
 
 use tauri::Manager;
+use tauri::webview::WebviewWindowBuilder;
 
 use state::AppState;
 
@@ -25,7 +26,7 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_webdriver_automation::init());
     }
 
-    builder
+    let app = builder
         .setup(|app| {
             // Allow overriding data dir via env var (for e2e tests isolation)
             let data_dir = if let Ok(dir) = std::env::var("MURMUR_DATA_DIR") {
@@ -39,6 +40,38 @@ pub fn run() {
 
             let app_state = AppState::new(data_dir);
             app.manage(app_state);
+
+            // Register global shortcut for quick capture (Cmd/Ctrl+Shift+M)
+            use tauri_plugin_global_shortcut::GlobalShortcutExt;
+            let handle = app.handle().clone();
+            app.global_shortcut().on_shortcut("CmdOrCtrl+Shift+M", move |_app, _shortcut, event| {
+                if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                    // Show existing quick-capture window or create a new one
+                    if let Some(w) = handle.get_webview_window("quick-capture") {
+                        w.show().ok();
+                        w.set_focus().ok();
+                    } else {
+                        let url = if cfg!(debug_assertions) {
+                            tauri::WebviewUrl::External("http://localhost:1420/#/quick-capture".parse().unwrap())
+                        } else {
+                            tauri::WebviewUrl::App("index.html#/quick-capture".into())
+                        };
+                        if let Ok(w) = WebviewWindowBuilder::new(&handle, "quick-capture", url)
+                            .title("Quick Capture")
+                            .inner_size(480.0, 72.0)
+                            .resizable(false)
+                            .decorations(false)
+                            .always_on_top(true)
+                            .center()
+                            .visible(true)
+                            .skip_taskbar(true)
+                            .build()
+                        {
+                            w.set_focus().ok();
+                        }
+                    }
+                }
+            })?;
 
             Ok(())
         })
@@ -108,7 +141,35 @@ pub fn run() {
             commands::telegram::start_telegram_bot,
             commands::telegram::stop_telegram_bot,
             commands::telegram::get_telegram_status,
+            // URL Meta
+            commands::url_meta::fetch_url_meta,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .on_window_event(|window, event| {
+            // macOS: hide window on close instead of quitting
+            #[cfg(target_os = "macos")]
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                window.hide().ok();
+                api.prevent_close();
+            }
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    // macOS: re-show window when dock icon is clicked
+    #[cfg(target_os = "macos")]
+    {
+        use tauri::Manager;
+        let app_handle = app.handle().clone();
+        app.run(move |_app_handle, event| {
+            if let tauri::RunEvent::Reopen { .. } = event {
+                if let Some(w) = app_handle.get_webview_window("main") {
+                    w.show().ok();
+                    w.set_focus().ok();
+                }
+            }
+        });
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    app.run(|_, _| {});
 }
