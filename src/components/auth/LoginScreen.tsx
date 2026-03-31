@@ -206,8 +206,33 @@ export default function LoginScreen() {
               <>
                 <h3 className="text-lg font-medium mb-4">{t("auth.reset.success")}</h3>
                 <p className="text-sm text-text-secondary mb-3">{t("auth.reset.saveCode")}</p>
-                <div className="bg-warm-100 p-3 rounded-lg font-mono text-center text-sm mb-4 select-all">
+                <div className="bg-warm-100 p-3 rounded-lg font-mono text-center text-sm mb-3 select-all">
                   {newRecoveryCode}
+                </div>
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => navigator.clipboard.writeText(newRecoveryCode)}
+                    className="flex-1 py-2 rounded-lg border border-border text-text-primary text-sm hover:bg-warm-50"
+                  >
+                    {t("auth.setup.copy")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const blob = new Blob(
+                        [t("auth.setup.recoveryFileContent", { code: newRecoveryCode })],
+                        { type: "text/plain" }
+                      );
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "murmur-recovery-code.txt";
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="flex-1 py-2 rounded-lg border border-border text-text-primary text-sm hover:bg-warm-50"
+                  >
+                    {t("auth.setup.download")}
+                  </button>
                 </div>
                 <button
                   onClick={() => {
