@@ -36,6 +36,7 @@ export default function TagPanel({ visible, onClose }: Props) {
     }
     setDayTagIds(newSet);
     await ipc.setDayTags(currentDay.id, Array.from(newSet));
+    useDiaryStore.getState().bumpTagVersion();
   };
 
   const handleCreateTag = async () => {

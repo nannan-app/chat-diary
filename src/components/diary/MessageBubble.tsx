@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
+import { FileText } from "lucide-react";
 import type { Message } from "../../lib/types";
 import { useUIStore } from "../../stores/uiStore";
 import { SOURCE_ICONS } from "../../lib/constants";
@@ -66,6 +67,56 @@ export default function MessageBubble({ message }: Props) {
     );
   }
 
+  // Article card
+  if (message.kind === "article") {
+    // Strip HTML tags for plain text preview
+    const plainPreview = message.article_preview
+      ? message.article_preview.replace(/<[^>]*>/g, "").trim()
+      : "";
+    const previewLine = plainPreview.slice(0, 80) + (plainPreview.length > 80 ? "..." : "");
+
+    const handleArticleClick = () => {
+      if (message.article_id) {
+        useUIStore.getState().setViewingArticleId(message.article_id);
+      }
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        className="flex justify-end mb-2 px-4"
+        onContextMenu={handleContextMenu}
+      >
+        <div className="max-w-[70%]">
+          <div
+            onClick={handleArticleClick}
+            className="bg-white rounded-2xl rounded-tr-md shadow-sm border border-border/50 px-4 py-3 cursor-pointer hover:shadow-md transition-shadow min-w-[240px]"
+          >
+            <div className="flex items-start gap-2.5 mb-2">
+              <FileText className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+              <span className="text-sm font-medium text-text-primary line-clamp-2">{message.content}</span>
+            </div>
+            {previewLine && (
+              <p className="text-xs text-text-secondary leading-relaxed mb-2 line-clamp-2 pl-7">
+                {previewLine}
+              </p>
+            )}
+            <div className="flex items-center gap-1 pl-7">
+              <div className="w-full h-px bg-border/50" />
+            </div>
+            <p className="text-xs text-accent mt-1.5 pl-7">长文 · 点击查看全文</p>
+          </div>
+          <div className="flex items-center gap-1 mt-0.5 justify-end">
+            <span className="text-xs text-text-hint">{time}</span>
+            {sourceIcon && <span className="text-xs">{sourceIcon}</span>}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   // Quote reference
   const quoteBlock = message.quote_content ? (
     <div className="bg-warm-100/50 rounded-lg px-2.5 py-1.5 mb-1 border-l-2 border-accent/40">
@@ -87,7 +138,7 @@ export default function MessageBubble({ message }: Props) {
       <div className={`max-w-[70%] ${isUser ? "items-end" : "items-start"} flex flex-col`}>
         {quoteBlock}
         <div
-          className={`px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words
+          className={`px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words select-text
             ${
               isUser
                 ? "bg-[#95ec69] text-text-primary rounded-tr-md"

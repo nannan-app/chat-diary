@@ -14,6 +14,7 @@ import BadgeWall from "../achievements/BadgeWall";
 import LibraryView from "../library/LibraryView";
 import Celebration from "../shared/Celebration";
 import QuickCapture from "../shared/QuickCapture";
+import ArticleViewer from "../editor/ArticleViewer";
 
 export default function AppShell() {
   const activeNav = useUIStore((s) => s.activeNav);
@@ -127,6 +128,11 @@ export default function AppShell() {
 
       {/* Celebrations */}
       <Celebration />
+
+      {/* Article viewer */}
+      <AnimatePresence>
+        <ArticleViewer />
+      </AnimatePresence>
 
       {/* Settings overlay */}
       <AnimatePresence>

@@ -66,6 +66,8 @@ export const createArticle = (diaryDayId: number, title: string, content: string
   invoke<Message>("create_article", { diaryDayId, title, content });
 export const getAllArticles = () =>
   invoke<Article[]>("get_all_articles");
+export const getArticle = (articleId: number) =>
+  invoke<Article>("get_article", { articleId });
 export const searchDiary = (query: string) =>
   invoke<SearchResult[]>("search", { query });
 

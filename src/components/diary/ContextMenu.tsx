@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Quote, Pencil, Star, Tag as TagIcon, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore } from "../../stores/uiStore";
@@ -7,6 +8,7 @@ import * as ipc from "../../lib/ipc";
 import type { Tag } from "../../lib/types";
 
 export default function ContextMenu() {
+  const { t } = useTranslation();
   const { visible, x, y, messageId } = useUIStore((s) => s.contextMenu);
   const hideContextMenu = useUIStore((s) => s.hideContextMenu);
   const setQuoteMessage = useUIStore((s) => s.setQuoteMessage);
@@ -17,17 +19,27 @@ export default function ContextMenu() {
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [messageTags, setMessageTags] = useState<number[]>([]);
+  const [adjustedPos, setAdjustedPos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!visible) {
       setShowTagSelector(false);
+      return;
     }
+    // Adjust position: open to the left of cursor, stay within viewport
+    const menuWidth = 140;
+    const menuHeight = 220;
+    let adjX = x - menuWidth; // Open to the left
+    let adjY = y;
+    if (adjX < 8) adjX = 8;
+    if (adjY + menuHeight > window.innerHeight) adjY = window.innerHeight - menuHeight - 8;
+    if (adjY < 8) adjY = 8;
+    setAdjustedPos({ x: adjX, y: adjY });
+
     const handleClick = () => hideContextMenu();
-    if (visible) {
-      document.addEventListener("click", handleClick);
-      return () => document.removeEventListener("click", handleClick);
-    }
-  }, [visible, hideContextMenu]);
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [visible, x, y, hideContextMenu]);
 
   const message = messages.find((m) => m.id === messageId);
 
@@ -75,10 +87,10 @@ export default function ContextMenu() {
   };
 
   const items = [
-    { label: "引用", icon: Quote, action: handleQuote },
-    { label: "编辑", icon: Pencil, action: handleEdit },
+    { label: t("menu.quote"), icon: Quote, action: handleQuote },
+    { label: t("menu.edit"), icon: Pencil, action: handleEdit },
     {
-      label: "收藏", icon: Star, action: async () => {
+      label: t("menu.favorite"), icon: Star, action: async () => {
         if (message) {
           const currentDay = useDiaryStore.getState().currentDay;
           await ipc.addFavorite({
@@ -90,8 +102,8 @@ export default function ContextMenu() {
         hideContextMenu();
       }
     },
-    { label: "标签", icon: TagIcon, action: handleTagClick },
-    { label: "删除", icon: Trash2, action: handleDelete, danger: true },
+    { label: t("menu.tag"), icon: TagIcon, action: handleTagClick, keepOpen: true },
+    { label: t("menu.delete"), icon: Trash2, action: handleDelete, danger: true },
   ];
 
   return (
@@ -103,14 +115,17 @@ export default function ContextMenu() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.12 }}
-          style={{ left: x, top: y }}
+          style={{ left: adjustedPos.x, top: adjustedPos.y }}
           className="fixed z-50 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[120px]"
         >
           {!showTagSelector ? (
             items.map((item) => (
               <button
                 key={item.label}
-                onClick={item.action}
+                onClick={(e) => {
+                  if ((item as any).keepOpen) e.stopPropagation();
+                  item.action();
+                }}
                 className={`w-full px-3 py-1.5 text-left text-sm flex items-center gap-2
                             hover:bg-warm-100 transition-colors
                             ${item.danger ? "text-red-400" : "text-text-primary"}`}

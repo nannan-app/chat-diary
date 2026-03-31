@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Camera, SmilePlus, Bot, Tag, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -11,13 +12,18 @@ import MarkdownEditor from "../editor/MarkdownEditor";
 import * as ipc from "../../lib/ipc";
 
 export default function MessageInput() {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [showMoodPanel, setShowMoodPanel] = useState(false);
   const [showTagPanel, setShowTagPanel] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [inputHeight, setInputHeight] = useState(80);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const isDragging = useRef(false);
+  const dragStartY = useRef(0);
+  const dragStartHeight = useRef(0);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [useOriginal, _setUseOriginal] = useState(false);
@@ -48,7 +54,7 @@ export default function MessageInput() {
       await editMessage(editingMessage.id, trimmed);
       setEditingMessage(null);
     } else {
-      await sendTextMessage(trimmed);
+      await sendTextMessage(trimmed, quoteMessage?.id);
     }
 
     setText("");
@@ -96,14 +102,41 @@ export default function MessageInput() {
   };
 
   const handleImageUpload = async () => {
-    const selected = await open({
-      multiple: false,
-      filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }],
-    });
-    if (!selected) return;
-    const bytes = await readFile(selected);
-    await uploadImageFn(bytes, !useOriginal);
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }],
+      });
+      if (!selected) return;
+      const bytes = await readFile(selected);
+      await uploadImageFn(bytes, !useOriginal);
+    } catch (e) {
+      console.log("Image upload error:", e);
+    }
   };
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    dragStartY.current = e.clientY;
+    dragStartHeight.current = inputHeight;
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = dragStartY.current - ev.clientY;
+      const newHeight = Math.min(Math.max(dragStartHeight.current + delta, 60), 400);
+      setInputHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [inputHeight]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -120,6 +153,13 @@ export default function MessageInput() {
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
+      {/* Resize handle */}
+      <div
+        onMouseDown={handleResizeStart}
+        className="h-1.5 cursor-ns-resize flex items-center justify-center hover:bg-warm-100 transition-colors group"
+      >
+        <div className="w-8 h-0.5 rounded-full bg-border group-hover:bg-text-hint transition-colors" />
+      </div>
       {/* Quote preview */}
       <AnimatePresence>
         {quoteMessage && (
@@ -255,12 +295,11 @@ export default function MessageInput() {
               handleTyping();
             }}
             onKeyDown={handleKeyDown}
-            placeholder="写点什么..."
-            rows={3}
+            placeholder={t("diary.input.placeholder")}
             className="flex-1 resize-none bg-transparent text-sm text-text-primary
                        placeholder:text-text-hint focus:outline-none leading-relaxed
-                       max-h-48 overflow-y-auto"
-            style={{ minHeight: "60px" }}
+                       overflow-y-auto"
+            style={{ height: `${inputHeight}px` }}
           />
           <button
             onClick={handleSend}
@@ -268,7 +307,7 @@ export default function MessageInput() {
             className="text-accent disabled:text-text-hint transition-colors text-sm
                        hover:text-accent-hover"
           >
-            发送
+            {t("diary.input.send")}
           </button>
         </div>
       </div>
@@ -280,6 +319,8 @@ export default function MessageInput() {
             const currentDay = useDiaryStore.getState().currentDay;
             if (currentDay) {
               const msg = await ipc.createArticle(currentDay.id, title, content);
+              // Add article_preview for immediate display (before page reload)
+              msg.article_preview = content.slice(0, 200);
               useDiaryStore.setState((s) => ({ messages: [...s.messages, msg] }));
             }
             setShowEditor(false);

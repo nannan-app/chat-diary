@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
@@ -6,23 +7,44 @@ import { useDiaryStore } from "../../stores/diaryStore";
 import CalendarPopover from "./CalendarPopover";
 import SearchResults from "./SearchResults";
 import * as ipc from "../../lib/ipc";
-import type { SearchResult } from "../../lib/types";
+import type { SearchResult, Tag } from "../../lib/types";
 
 export default function DiaryList() {
+  const { t } = useTranslation();
   const [showCalendar, setShowCalendar] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_searching, setSearching] = useState(false);
+  const [dayTags, setDayTags] = useState<Record<number, Tag[]>>({});
   const diaryDays = useDiaryStore((s) => s.diaryDays);
   const selectedDate = useDiaryStore((s) => s.selectedDate);
   const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
   const loadDiaryList = useDiaryStore((s) => s.loadDiaryList);
+  const tagVersion = useDiaryStore((s) => s.tagVersion);
 
   useEffect(() => {
     const now = dayjs();
     loadDiaryList(now.year(), now.month() + 1);
   }, [loadDiaryList]);
+
+  // Load tags for each diary day
+  useEffect(() => {
+    if (diaryDays.length === 0) return;
+    const loadTags = async () => {
+      const tagMap: Record<number, Tag[]> = {};
+      await Promise.all(
+        diaryDays.map(async (day) => {
+          try {
+            const tags = await ipc.getDayTags(day.id);
+            if (tags.length > 0) tagMap[day.id] = tags;
+          } catch { /* ignore */ }
+        })
+      );
+      setDayTags(tagMap);
+    };
+    loadTags();
+  }, [diaryDays, tagVersion]);
 
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
@@ -49,7 +71,7 @@ export default function DiaryList() {
             type="text"
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            placeholder="搜索日记..."
+            placeholder={t("diary.search")}
             className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-border text-sm
                        placeholder:text-text-hint focus:outline-none focus:border-accent
                        transition-colors"
@@ -108,11 +130,21 @@ export default function DiaryList() {
                   {day.summary}
                 </p>
               )}
-              {day.word_count > 0 && (
-                <span className="text-xs text-text-hint">
-                  {day.word_count} 字
-                </span>
-              )}
+              <div className="flex items-center gap-1 mt-0.5">
+                {day.word_count > 0 && (
+                  <span className="text-xs text-text-hint">
+                    {day.word_count} 字
+                  </span>
+                )}
+                {dayTags[day.id]?.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: tag.color }}
+                    title={tag.name}
+                  />
+                ))}
+              </div>
             </motion.button>
           );
         })}

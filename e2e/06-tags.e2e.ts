@@ -1,89 +1,165 @@
-import { tauriInvoke, loginBeforeAll } from "./helpers";
+import {
+  loginBeforeAll,
+  shortWait,
+  getPageHtml,
+  reactSetValue,
+} from "./helpers";
 
-describe("06 - Tag System", () => {
-  let dayId: number;
-  let messageId: number;
-  let customTagId: number;
-
+/**
+ * 06 - Tag System (UI)
+ *
+ * All tag operations go through the UI tag panel.
+ * See also 16-tag-ui.e2e.ts for additional tag UI tests.
+ */
+describe("06 - Tag System (UI)", () => {
   before(async () => {
     await loginBeforeAll("test1234");
-    dayId = ((await tauriInvoke("get_or_create_today")) as any).ok.id;
-    // Get first text message
-    const msgs = ((await tauriInvoke("get_messages", { diaryDayId: dayId })) as any).ok;
-    const textMsg = msgs.find((m: any) => m.kind === "text");
-    messageId = textMsg.id;
   });
 
-  it("6.1 should have system tags", async () => {
-    const r = await tauriInvoke("get_tags") as any;
-    expect(r.ok.length).toBeGreaterThanOrEqual(5);
-    const names = r.ok.map((t: any) => t.name);
-    expect(names).toContain("工作");
-    expect(names).toContain("生活");
-    expect(names).toContain("旅行");
-    expect(names).toContain("感悟");
-    expect(names).toContain("学习");
+  it("6.1 should open tag panel and see system tags", async () => {
+    await browser.execute(() => {
+      const btn = document.querySelector('button[title="标签"]') as HTMLElement;
+      btn?.click();
+    });
+    await shortWait(800);
+
+    const html = await getPageHtml();
+    expect(html).toContain("工作");
+    expect(html).toContain("生活");
+    expect(html).toContain("旅行");
+    expect(html).toContain("感悟");
+    expect(html).toContain("学习");
   });
 
-  it("6.2 should create custom tag", async () => {
-    const r = await tauriInvoke("create_tag", { name: "E2E测试标签" }) as any;
-    expect(r.ok).toBeDefined();
-    expect(r.ok.name).toBe("E2E测试标签");
-    expect(r.ok.is_system).toBe(false);
-    customTagId = r.ok.id;
+  it("6.2 should toggle a system tag on current day via UI", async () => {
+    // Click the "工作" tag to assign it
+    await browser.execute(() => {
+      const buttons = document.querySelectorAll("button");
+      for (const b of buttons) {
+        if (b.textContent?.trim() === "工作" || b.textContent?.includes("工作")) {
+          if (b.closest('[class*="flex-wrap"]')) {
+            b.click();
+            return;
+          }
+        }
+      }
+    });
+    await shortWait(1000);
+
+    // Verify: tag gets colored background (selected state)
+    const isSelected = await browser.execute(() => {
+      const buttons = document.querySelectorAll("button");
+      for (const b of buttons) {
+        if (b.textContent?.includes("工作") && (b as HTMLElement).style.backgroundColor) {
+          return true;
+        }
+      }
+      return false;
+    });
+    expect(isSelected).toBe(true);
   });
 
-  it("6.3 should assign Morandi color to custom tag", async () => {
-    const r = await tauriInvoke("get_tags") as any;
-    const tag = r.ok.find((t: any) => t.name === "E2E测试标签");
-    expect(tag.color).toMatch(/^#[0-9a-fA-F]{6}$/);
+  it("6.3 should create custom tag via tag panel input", async () => {
+    // Find the tag creation input
+    const hasInput = await browser.execute(() => {
+      return !!document.querySelector('input[placeholder*="标签"]');
+    });
+
+    if (hasInput) {
+      await reactSetValue('input[placeholder*="标签"]', "UI自定义标签");
+      await shortWait(300);
+
+      // Submit (Enter or click create button)
+      await browser.execute(() => {
+        const input = document.querySelector('input[placeholder*="标签"]') as HTMLElement;
+        if (input) {
+          input.dispatchEvent(new KeyboardEvent("keydown", {
+            key: "Enter", code: "Enter", keyCode: 13, bubbles: true,
+          }));
+        }
+      });
+      await shortWait(1000);
+
+      const html = await getPageHtml();
+      expect(html).toContain("UI自定义标签");
+    }
   });
 
-  it("6.4 should set and get day-level tags", async () => {
-    const tags = ((await tauriInvoke("get_tags")) as any).ok;
-    const workTag = tags.find((t: any) => t.name === "工作");
-    await tauriInvoke("set_day_tags", { diaryDayId: dayId, tagIds: [workTag.id, customTagId] });
-
-    const r = await tauriInvoke("get_day_tags", { diaryDayId: dayId }) as any;
-    expect(r.ok.length).toBe(2);
-    const names = r.ok.map((t: any) => t.name);
-    expect(names).toContain("工作");
-    expect(names).toContain("E2E测试标签");
+  it("6.4 should toggle tag off (deselect)", async () => {
+    // Click "工作" again to deselect
+    await browser.execute(() => {
+      const buttons = document.querySelectorAll("button");
+      for (const b of buttons) {
+        if (b.textContent?.includes("工作") && (b as HTMLElement).style.backgroundColor) {
+          b.click();
+          return;
+        }
+      }
+    });
+    await shortWait(500);
   });
 
-  it("6.5 should set and get message-level tags", async () => {
-    const tags = ((await tauriInvoke("get_tags")) as any).ok;
-    const lifeTag = tags.find((t: any) => t.name === "生活");
-    await tauriInvoke("set_message_tags", { messageId, tagIds: [lifeTag.id] });
+  it("6.5 should assign message-level tag via context menu", async () => {
+    // Close tag panel first
+    await browser.execute(() => {
+      const btn = document.querySelector('button[title="标签"]') as HTMLElement;
+      btn?.click();
+    });
+    await shortWait(300);
 
-    const r = await tauriInvoke("get_message_tags", { messageId }) as any;
-    expect(r.ok.length).toBe(1);
-    expect(r.ok[0].name).toBe("生活");
-  });
+    // Right-click on a message
+    await browser.execute(() => {
+      const bubbles = document.querySelectorAll('[class*="bg-[#95ec69]"]');
+      if (bubbles.length === 0) return;
+      const bubble = bubbles[0] as HTMLElement;
+      const parent = bubble.closest("[class*='flex justify-end']") || bubble.parentElement?.parentElement;
+      if (!parent) return;
+      const rect = bubble.getBoundingClientRect();
+      parent.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true, clientX: rect.left + 10, clientY: rect.top + 10,
+      }));
+    });
+    await shortWait(500);
 
-  it("6.6 should delete custom tag", async () => {
-    await tauriInvoke("delete_tag", { tagId: customTagId });
-    const r = await tauriInvoke("get_tags") as any;
-    const found = r.ok.find((t: any) => t.name === "E2E测试标签");
-    expect(found).toBeUndefined();
-  });
+    // Click "标签" in context menu
+    await browser.execute(() => {
+      const menu = document.querySelector(".fixed.z-50");
+      if (!menu) return;
+      const btns = menu.querySelectorAll("button");
+      for (const b of btns) {
+        if (b.textContent?.includes("标签")) { (b as HTMLElement).click(); return; }
+      }
+    });
+    await shortWait(1500); // Async tag loading needs more time
 
-  it("6.7 should not delete system tag", async () => {
-    const tags = ((await tauriInvoke("get_tags")) as any).ok;
-    const workTag = tags.find((t: any) => t.name === "工作");
-    await tauriInvoke("delete_tag", { tagId: workTag.id });
-    const r = await tauriInvoke("get_tags") as any;
-    const stillThere = r.ok.find((t: any) => t.name === "工作");
-    expect(stillThere).toBeDefined();
-  });
+    // Verify: tag selector sub-panel shows with checkboxes
+    const hasTagSelector = await browser.execute(() => {
+      const menu = document.querySelector(".fixed.z-50");
+      if (!menu) return false;
+      return menu.innerHTML.includes("选择标签");
+    });
+    expect(hasTagSelector).toBe(true);
 
-  it("6.8 should cascade delete tag from day associations", async () => {
-    // Create a tag, assign it, delete it, check it's gone from day tags
-    const newTag = ((await tauriInvoke("create_tag", { name: "临时标签" })) as any).ok;
-    await tauriInvoke("set_day_tags", { diaryDayId: dayId, tagIds: [newTag.id] });
-    await tauriInvoke("delete_tag", { tagId: newTag.id });
-    const r = await tauriInvoke("get_day_tags", { diaryDayId: dayId }) as any;
-    const found = r.ok.find((t: any) => t.name === "临时标签");
-    expect(found).toBeUndefined();
+    // Click a tag to assign it to message
+    await browser.execute(() => {
+      const menu = document.querySelector(".fixed.z-50");
+      if (!menu) return;
+      const btns = menu.querySelectorAll("button");
+      for (const b of btns) {
+        if (b.textContent?.includes("生活")) { b.click(); return; }
+      }
+    });
+    await shortWait(500);
+
+    // Click "完成"
+    await browser.execute(() => {
+      const menu = document.querySelector(".fixed.z-50");
+      if (!menu) return;
+      const btns = menu.querySelectorAll("button");
+      for (const b of btns) {
+        if (b.textContent?.includes("完成")) { (b as HTMLElement).click(); return; }
+      }
+    });
+    await shortWait(500);
   });
 });

@@ -219,7 +219,7 @@ pub fn change_password(
 
     // Update key_store (only password side, recovery stays the same)
     conn.execute(
-        "UPDATE key_store SET master_key_by_password = ?1, password_salt = ?2, password_nonce = ?3, password_hint = ?4, updated_at = datetime('now') WHERE id = 1",
+        "UPDATE key_store SET master_key_by_password = ?1, password_salt = ?2, password_nonce = ?3, password_hint = ?4, updated_at = datetime('now', 'localtime') WHERE id = 1",
         rusqlite::params![new_wrapped, new_salt.to_vec(), new_nonce.to_vec(), new_hint],
     )?;
 
@@ -267,7 +267,7 @@ pub fn reset_password_with_recovery(
 
     // Update key_store
     conn.execute(
-        "UPDATE key_store SET master_key_by_password = ?1, password_salt = ?2, password_nonce = ?3, master_key_by_recovery = ?4, recovery_salt = ?5, recovery_nonce = ?6, password_hint = ?7, updated_at = datetime('now') WHERE id = 1",
+        "UPDATE key_store SET master_key_by_password = ?1, password_salt = ?2, password_nonce = ?3, master_key_by_recovery = ?4, recovery_salt = ?5, recovery_nonce = ?6, password_hint = ?7, updated_at = datetime('now', 'localtime') WHERE id = 1",
         rusqlite::params![
             new_password_wrapped, new_password_salt.to_vec(), new_password_nonce.to_vec(),
             new_recovery_wrapped, new_recovery_salt.to_vec(), new_recovery_nonce.to_vec(),
@@ -309,7 +309,7 @@ pub fn regenerate_recovery_code(
     let new_recovery_wrapped = mk::wrap(&master_key.0, &new_recovery_derived, &new_recovery_nonce)?;
 
     conn.execute(
-        "UPDATE key_store SET master_key_by_recovery = ?1, recovery_salt = ?2, recovery_nonce = ?3, updated_at = datetime('now') WHERE id = 1",
+        "UPDATE key_store SET master_key_by_recovery = ?1, recovery_salt = ?2, recovery_nonce = ?3, updated_at = datetime('now', 'localtime') WHERE id = 1",
         rusqlite::params![new_recovery_wrapped, new_recovery_salt.to_vec(), new_recovery_nonce.to_vec()],
     )?;
 
@@ -326,7 +326,7 @@ pub fn update_password_hint(
     let conn = conn_lock.as_ref().ok_or(MurmurError::NotAuthenticated)?;
 
     conn.execute(
-        "UPDATE key_store SET password_hint = ?1, updated_at = datetime('now') WHERE id = 1",
+        "UPDATE key_store SET password_hint = ?1, updated_at = datetime('now', 'localtime') WHERE id = 1",
         rusqlite::params![hint],
     )?;
 

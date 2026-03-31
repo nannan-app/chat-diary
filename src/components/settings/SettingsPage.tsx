@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import * as ipc from "../../lib/ipc";
@@ -7,6 +8,7 @@ import { useAuthStore } from "../../stores/authStore";
 type Section = "account" | "ai" | "writing" | "display" | "data" | "about";
 
 export default function SettingsPage({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<Section>("account");
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -35,12 +37,12 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
   };
 
   const sections: { id: Section; label: string; icon: React.FC<any> }[] = [
-    { id: "account", label: "账户与安全", icon: ShieldCheck },
-    { id: "ai", label: "AI 设置", icon: Bot },
-    { id: "writing", label: "写作偏好", icon: PenLine },
-    { id: "display", label: "显示", icon: Palette },
-    { id: "data", label: "数据管理", icon: Database },
-    { id: "about", label: "关于", icon: Info },
+    { id: "account", label: t("settings.account"), icon: ShieldCheck },
+    { id: "ai", label: t("settings.ai"), icon: Bot },
+    { id: "writing", label: t("settings.writing"), icon: PenLine },
+    { id: "display", label: t("settings.display"), icon: Palette },
+    { id: "data", label: t("settings.data"), icon: Database },
+    { id: "about", label: t("settings.about"), icon: Info },
   ];
 
   return (
@@ -81,7 +83,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-400
                        hover:bg-red-50 transition-colors"
           >
-            <LogOut className="w-4 h-4 inline mr-1" /> 锁定并退出
+            <LogOut className="w-4 h-4 inline mr-1" /> {t("settings.lock")}
           </button>
         </div>
 
@@ -297,14 +299,14 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             <div className="space-y-4">
               <SettingItem label="导出数据库">
                 <button onClick={async () => {
-                  const { save } = await import("@tauri-apps/plugin-dialog");
+                  const { save, message: showMessage } = await import("@tauri-apps/plugin-dialog");
                   const path = await save({ defaultPath: "murmur-backup.zip", filters: [{ name: "ZIP", extensions: ["zip"] }] });
                   if (path) {
                     try {
                       await ipc.exportDatabase(path);
-                      alert("导出成功！");
+                      await showMessage("导出成功！", { title: "完成" });
                     } catch (e: any) {
-                      alert("导出失败：" + e);
+                      await showMessage("导出失败：" + e, { title: "错误", kind: "error" });
                     }
                   }
                 }} className="text-sm text-accent hover:text-accent-hover">
@@ -313,17 +315,18 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               </SettingItem>
               <SettingItem label="导入数据库">
                 <button onClick={async () => {
-                  const { open } = await import("@tauri-apps/plugin-dialog");
+                  const { open, message: showMessage } = await import("@tauri-apps/plugin-dialog");
                   const path = await open({ filters: [{ name: "ZIP", extensions: ["zip"] }] });
                   if (path) {
-                    const password = prompt("请输入备份文件的密码：");
+                    // Use a simple input dialog approach - prompt is not available in Tauri
+                    const password = window.prompt("请输入备份文件的密码：");
                     if (password) {
                       try {
                         await ipc.importDatabase(path as string, password);
-                        alert("导入成功！请重新启动应用。");
+                        await showMessage("导入成功！请重新启动应用。", { title: "完成" });
                         window.location.reload();
                       } catch (e: any) {
-                        alert("导入失败：" + e);
+                        await showMessage("导入失败：" + e, { title: "错误", kind: "error" });
                       }
                     }
                   }
@@ -333,16 +336,17 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               </SettingItem>
               <SettingItem label="删除所有数据">
                 <button onClick={async () => {
-                  const confirmed = confirm("确定要删除所有数据吗？此操作不可恢复！");
+                  const { ask, message: showMessage } = await import("@tauri-apps/plugin-dialog");
+                  const confirmed = await ask("确定要删除所有数据吗？此操作不可恢复！", { title: "删除确认", kind: "warning" });
                   if (confirmed) {
-                    const doubleConfirm = confirm("再次确认：所有日记、图片、设置都将被永久删除。确定吗？");
+                    const doubleConfirm = await ask("再次确认：所有日记、图片、设置都将被永久删除。确定吗？", { title: "最终确认", kind: "warning" });
                     if (doubleConfirm) {
                       try {
                         await ipc.deleteAllData();
-                        alert("所有数据已删除。");
+                        await showMessage("所有数据已删除。", { title: "完成" });
                         window.location.reload();
                       } catch (e: any) {
-                        alert("删除失败：" + e);
+                        await showMessage("删除失败：" + e, { title: "错误", kind: "error" });
                       }
                     }
                   }

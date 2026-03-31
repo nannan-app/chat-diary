@@ -29,7 +29,7 @@ pub fn insert_image(
         original_height: height,
         file_size,
         mime_type: mime_type.to_string(),
-        created_at: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        created_at: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
     })
 }
 

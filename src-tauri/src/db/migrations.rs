@@ -4,7 +4,7 @@ use crate::error::MurmurError;
 const CURRENT_VERSION: i32 = 2;
 
 pub fn run_migrations(conn: &Connection) -> Result<(), MurmurError> {
-    conn.execute_batch("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))")?;
+    conn.execute_batch("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')))")?;
 
     let version: i32 = conn
         .query_row(
@@ -37,8 +37,8 @@ fn migrate_v1(conn: &Connection) -> Result<(), MurmurError> {
             password_nonce          BLOB NOT NULL,
             recovery_nonce          BLOB NOT NULL,
             password_hint           TEXT,
-            created_at              TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at              TEXT NOT NULL DEFAULT (datetime('now'))
+            created_at              TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+            updated_at              TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
 
         CREATE TABLE IF NOT EXISTS diary_days (
@@ -46,8 +46,8 @@ fn migrate_v1(conn: &Connection) -> Result<(), MurmurError> {
             date        TEXT NOT NULL UNIQUE,
             summary     TEXT,
             word_count  INTEGER NOT NULL DEFAULT 0,
-            created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+            created_at  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+            updated_at  TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
         CREATE INDEX IF NOT EXISTS idx_diary_days_date ON diary_days(date);
 
@@ -60,7 +60,7 @@ fn migrate_v1(conn: &Connection) -> Result<(), MurmurError> {
             original_height INTEGER,
             file_size       INTEGER,
             mime_type       TEXT NOT NULL DEFAULT 'image/jpeg',
-            created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+            created_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
 
         CREATE TABLE IF NOT EXISTS articles (
@@ -69,8 +69,8 @@ fn migrate_v1(conn: &Connection) -> Result<(), MurmurError> {
             title           TEXT NOT NULL,
             content         TEXT NOT NULL,
             word_count      INTEGER NOT NULL DEFAULT 0,
-            created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+            created_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+            updated_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
 
         CREATE TABLE IF NOT EXISTS messages (
@@ -87,8 +87,8 @@ fn migrate_v1(conn: &Connection) -> Result<(), MurmurError> {
             quote_ref_id    INTEGER REFERENCES messages(id),
             source          TEXT DEFAULT 'app' CHECK (source IN ('app', 'telegram', 'wechat', 'quick_capture')),
             sort_order      INTEGER NOT NULL,
-            created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+            created_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+            updated_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
         CREATE INDEX IF NOT EXISTS idx_messages_day ON messages(diary_day_id, sort_order);
 
@@ -112,7 +112,7 @@ fn migrate_v1(conn: &Connection) -> Result<(), MurmurError> {
             article_id      INTEGER REFERENCES articles(id) ON DELETE SET NULL,
             content_preview TEXT,
             source_date     TEXT NOT NULL,
-            created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+            created_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
 
         CREATE TABLE IF NOT EXISTS achievements (

@@ -27,6 +27,7 @@ pub struct Message {
     // Joined fields for display
     pub quote_content: Option<String>,
     pub thumbnail: Option<Vec<u8>>,
+    pub article_preview: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

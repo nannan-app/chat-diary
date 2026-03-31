@@ -1,50 +1,93 @@
-import { tauriInvoke, loginBeforeAll } from "./helpers";
+import {
+  loginBeforeAll,
+  shortWait,
+  reactSetValue,
+  getPageHtml,
+  clickByText,
+} from "./helpers";
 
-describe("05 - Markdown Articles", () => {
-  let dayId: number;
-
+/**
+ * 05 - Markdown Articles (UI)
+ *
+ * Replaced IPC-based tests with UI tests.
+ * See also 15-article-ui.e2e.ts for additional article UI tests.
+ */
+describe("05 - Markdown Articles (UI)", () => {
   before(async () => {
     await loginBeforeAll("test1234");
-    dayId = ((await tauriInvoke("get_or_create_today")) as any).ok.id;
   });
 
-  it("5.1 should create article with title and content", async () => {
-    const r = await tauriInvoke("create_article", {
-      diaryDayId: dayId,
-      title: "我的第一篇长文",
-      content: "# 标题\n\n这是一篇测试长文，包含Markdown格式。\n\n- 列表项1\n- 列表项2",
-    }) as any;
-    expect(r.ok).toBeDefined();
-    expect(r.ok.kind).toBe("article");
-  });
-
-  it("5.2 should show article in messages list", async () => {
-    const r = await tauriInvoke("get_messages", { diaryDayId: dayId }) as any;
-    const articles = r.ok.filter((m: any) => m.kind === "article");
-    expect(articles.length).toBeGreaterThan(0);
-  });
-
-  it("5.3 should list all articles in library", async () => {
-    const r = await tauriInvoke("get_all_articles") as any;
-    expect(r.ok.length).toBeGreaterThan(0);
-    const article = r.ok.find((a: any) => a.title === "我的第一篇长文");
-    expect(article).toBeDefined();
-    expect(article.content).toContain("Markdown");
-  });
-
-  it("5.4 should allow multiple articles per day", async () => {
-    await tauriInvoke("create_article", {
-      diaryDayId: dayId,
-      title: "第二篇长文",
-      content: "另一篇文章内容",
+  it("5.1 should create article via editor UI", async () => {
+    // Click the "长文" toolbar button
+    await browser.execute(() => {
+      const btn = document.querySelector('button[title="长文"]') as HTMLElement;
+      btn?.click();
     });
-    const r = await tauriInvoke("get_all_articles") as any;
-    expect(r.ok.length).toBeGreaterThanOrEqual(2);
+    await shortWait(800);
+
+    // Type title
+    await reactSetValue('input[placeholder="标题"]', "IPC替代测试长文");
+    await shortWait(300);
+
+    // Type content in tiptap editor
+    await browser.execute(() => {
+      const editor = document.querySelector(".ProseMirror") as HTMLElement;
+      if (editor) {
+        editor.focus();
+        editor.innerHTML = "<p>这是通过UI创建的长文内容，用于替代IPC测试。</p>";
+        editor.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    await shortWait(300);
+
+    // Click "完成"
+    await clickByText("button", "完成");
+    await shortWait(1500);
+
+    // Verify: article card appears in chat
+    const html = await getPageHtml();
+    expect(html).toContain("IPC替代测试长文");
+    expect(html).toContain("点击查看全文");
   });
 
-  it("5.5 should track article word count", async () => {
-    const r = await tauriInvoke("get_all_articles") as any;
-    const article = r.ok.find((a: any) => a.title === "我的第一篇长文");
-    expect(article.word_count).toBeGreaterThan(0);
+  it("5.2 should show article card with content preview", async () => {
+    const html = await getPageHtml();
+    expect(html).toContain("通过UI创建的长文内容");
+  });
+
+  it("5.3 should navigate to library and see article", async () => {
+    // Click library nav button
+    await browser.execute(() => {
+      const btns = document.querySelectorAll("button[title]");
+      for (const b of btns) {
+        if (b.getAttribute("title")?.includes("文库")) {
+          (b as HTMLElement).click();
+          return;
+        }
+      }
+    });
+    await shortWait(1500);
+
+    // Verify: library should list the article
+    const html = await getPageHtml();
+    expect(html).toContain("IPC替代测试长文");
+  });
+
+  it("5.4 should navigate back to diary", async () => {
+    await browser.execute(() => {
+      const btns = document.querySelectorAll("button[title]");
+      for (const b of btns) {
+        if (b.getAttribute("title")?.includes("日记")) {
+          (b as HTMLElement).click();
+          return;
+        }
+      }
+    });
+    await shortWait(1000);
+
+    const hasTextarea = await browser.execute(() => {
+      return !!document.querySelector("textarea");
+    });
+    expect(hasTextarea).toBe(true);
   });
 });

@@ -167,6 +167,65 @@ state that later files depend on (e.g., setup must happen before diary writing).
 | 14.2 | AI reply appears in messages | §2.4 | get_messages shows kind="ai_reply" |
 | 14.3 | Empty diary returns error | §2.4 | ai_summarize on empty day → error |
 
+## 15. `15-article-ui.e2e.ts` — Article UI (Long Article Card)
+
+| # | Test | Requirement | How |
+|---|------|-------------|-----|
+| 15.1 | Open markdown editor via toolbar button | §2.3 长文模式按钮 | Click "长文" button, verify editor modal opens with title input |
+| 15.2 | Cannot save article without title | §2.3 | Verify "完成" button is disabled when title is empty |
+| 15.3 | Save article with title and content | §2.3 | Type title, enter content, click "完成", verify editor closes |
+| 15.4 | Article card appears in chat with title and preview | §2.3 卡片插入聊天流 | Verify card shows title + content preview + "点击查看全文" |
+| 15.5 | Cancel editor without saving | §2.3 | Open editor, type title, click "取消", verify no article saved |
+
+## 16. `16-tag-ui.e2e.ts` — Tag UI
+
+| # | Test | Requirement | How |
+|---|------|-------------|-----|
+| 16.1 | Open tag panel via toolbar | §2.6 工具栏标签按钮 | Click "标签" button, verify system tags visible |
+| 16.2 | Toggle tag on current day | §2.6 标签打在当天日记 | Click tag, verify selected state |
+| 16.3 | Create custom tag via UI | §2.6 用户可自定义增删 | Type tag name, submit, verify tag appears |
+| 16.4 | Close tag panel | §2.6 | Click button again, verify panel closes |
+| 16.5 | Tag color dots in sidebar | §2.6 日历视图颜色小色块 | Verify colored dots in diary list |
+
+## 17. `17-settings-ui.e2e.ts` — Settings UI
+
+| # | Test | Requirement | How |
+|---|------|-------------|-----|
+| 17.1 | Open settings modal | §6 设置页面 | Click settings button, verify sections visible |
+| 17.2 | Navigate to display section | §6 显示 | Click "显示", verify language/font options |
+| 17.3 | Change language to English | §5.4 多语言 | Change select to "en", verify English text appears |
+| 17.4 | Change language back to Chinese | §5.4 | Change select to "zh" |
+| 17.5 | Data section shows delete button | §5.2 删除所有数据 | Navigate to data, verify red delete button |
+| 17.6 | Close settings by clicking outside | §6 | Click backdrop, verify settings closed |
+
+## 18. `18-context-menu-ui.e2e.ts` — Context Menu & Text Selection
+
+| # | Test | Requirement | How |
+|---|------|-------------|-----|
+| 18.1 | Context menu on right-click | §2.2 右键菜单 | Right-click message, verify menu items |
+| 18.2 | Menu positioned to left of click | UI fix | Verify menu left position is adjusted |
+| 18.3 | Close menu on click elsewhere | §2.2 | Click body, verify menu disappears |
+| 18.4 | Text selection in messages | §2.2 | Verify select-text class and computed style |
+
+## 19. `19-image-ui.e2e.ts` — Image UI
+
+| # | Test | Requirement | How |
+|---|------|-------------|-----|
+| 19.1 | Image upload button exists | §2.2 图片插入 | Verify button[title="插入图片"] exists |
+| 19.2 | Image displays in chat as thumbnail | §5.1 缩略图 | Upload via IPC, verify <img> in chat |
+| 19.3 | Image has correct styling | §9.1 | Verify rounded-xl, cursor-pointer, max-width |
+| 19.4 | Drag-and-drop zone exists | §2.2 图片拖拽 | Verify chat area exists |
+
+## 20. `20-input-resize.e2e.ts` — Input Resize & UI Details
+
+| # | Test | Requirement | How |
+|---|------|-------------|-----|
+| 20.1 | Resize handle exists | UI feature | Verify cursor-ns-resize element |
+| 20.2 | Textarea has initial height | UI feature | Verify height > 50px |
+| 20.3 | All toolbar buttons present | §2.2 工具栏 | Verify 5 toolbar buttons |
+| 20.4 | Word count display | §2.2 字数统计 | Verify "字" hint text |
+| 20.5 | Timestamps show local time | §2.2 时间戳 | Verify HH:mm format, not all 00:00 |
+
 ---
 
 ## Coverage Summary
@@ -174,22 +233,22 @@ state that later files depend on (e.g., setup must happen before diary writing).
 | Design Section | Test File(s) | Tests |
 |----------------|-------------|-------|
 | §2.1 双空间隐私 | 01, 02, 10 | 16 |
-| §2.2 聊天式日记 | 03 | 13 |
-| §2.3 Markdown 长文 | 05 | 5 |
+| §2.2 聊天式日记 | 03, 18, 20 | 22 |
+| §2.3 Markdown 长文 | 05, 15 | 10 |
 | §2.4 AI 总结 | 14 | 3 |
 | §2.5 心情标签 | 03 | 2 |
-| §2.6 自定义标签 | 06 | 8 |
+| §2.6 自定义标签 | 06, 16 | 13 |
 | §2.8 收藏功能 | 07 | 6 |
 | §3.2 日记列表 | 03 | 2 |
-| §3.3 相册 | 13 | 5 |
+| §3.3 相册 | 13, 19 | 9 |
 | §4.1 书写统计 | 08 | 1 |
 | §4.4 随机回忆 | 12 | 2 |
 | §4.5 成就勋章 | 08 | 5 |
 | §5.1 数据存储 | 13 | 3 |
-| §5.2 数据迁移 | 11 | 5 |
+| §5.2 数据迁移 | 11, 17 | 8 |
 | §5.3 导出功能 | 11 | 4 |
-| §5.4 多语言 | 09 | 1 |
+| §5.4 多语言 | 09, 17 | 3 |
 | §5.8 搜索 | 04 | 5 |
-| §6 设置页面 | 09 | 7 |
+| §6 设置页面 | 09, 17 | 13 |
 | §8.1-8.3 用户流程 | 01, 10 | 15 |
-| **Total** | **14 files** | **~85 tests** |
+| **Total** | **20 files** | **~115 tests** |

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { CalendarDays, Images, BookOpen, Star, Medal, Dices, Settings, Lock, LockOpen } from "lucide-react";
 import { useUIStore } from "../../stores/uiStore";
 import { useAuthStore } from "../../stores/authStore";
@@ -6,18 +7,20 @@ import { useDiaryStore } from "../../stores/diaryStore";
 import * as ipc from "../../lib/ipc";
 import type { NavSection } from "../../lib/types";
 
-const navItems: { id: NavSection; icon: React.FC<any>; label: string }[] = [
-  { id: "diary", icon: CalendarDays, label: "日记" },
-  { id: "gallery", icon: Images, label: "相册" },
-  { id: "library", icon: BookOpen, label: "文库" },
-  { id: "favorites", icon: Star, label: "收藏" },
-  { id: "achievements", icon: Medal, label: "勋章" },
+const navItemDefs: { id: NavSection; icon: React.FC<any>; labelKey: string }[] = [
+  { id: "diary", icon: CalendarDays, labelKey: "nav.diary" },
+  { id: "gallery", icon: Images, labelKey: "nav.gallery" },
+  { id: "library", icon: BookOpen, labelKey: "nav.library" },
+  { id: "favorites", icon: Star, labelKey: "nav.favorites" },
+  { id: "achievements", icon: Medal, labelKey: "nav.achievements" },
 ];
 
 export default function IconNavBar() {
+  const { t } = useTranslation();
   const activeNav = useUIStore((s) => s.activeNav);
   const setActiveNav = useUIStore((s) => s.setActiveNav);
   const { spaceType, canSwitchSpace, switchSpace } = useAuthStore();
+  const navItems = navItemDefs.map(n => ({ ...n, label: t(n.labelKey) }));
   const loadToday = useDiaryStore((s) => s.loadToday);
 
   const handleSwitchSpace = async () => {
@@ -54,7 +57,7 @@ export default function IconNavBar() {
         <button
           className="w-10 h-10 rounded-xl flex items-center justify-center
                      text-lg hover:bg-warm-200/50 transition-colors mt-2"
-          title="随机回忆"
+          title={t("nav.random")}
           onClick={async () => {
             try {
               const day = await ipc.getRandomDiaryDay();
@@ -90,7 +93,7 @@ export default function IconNavBar() {
         onClick={() => useUIStore.getState().setShowSettings(true)}
         className="w-10 h-10 rounded-xl flex items-center justify-center
                    text-lg hover:bg-warm-200/50 transition-colors"
-        title="设置"
+        title={t("nav.settings")}
       >
         <Settings className="w-5 h-5" />
       </button>

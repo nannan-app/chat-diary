@@ -65,6 +65,7 @@ pub fn run() {
             commands::diary::delete_diary_day,
             commands::diary::create_article,
             commands::diary::get_all_articles,
+            commands::diary::get_article,
             commands::diary::get_diary_dates,
             commands::diary::search,
             commands::diary::get_random_diary_day,

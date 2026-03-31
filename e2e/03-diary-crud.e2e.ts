@@ -141,20 +141,50 @@ describe("03 - Diary CRUD", () => {
     expect(day.word_count).toBeGreaterThan(0);
   });
 
-  it("3.8 should support quote reply (IPC for data setup)", async () => {
-    const day = (await tauriInvoke("get_or_create_today") as any).ok;
-    const msgs = (await tauriInvoke("get_messages", { diaryDayId: day.id }) as any).ok;
-    const firstMsg = msgs.find((m: any) => m.kind === "text");
+  it("3.8 should quote reply via right-click menu", async () => {
+    // Right-click on a message to open context menu
+    await browser.execute(() => {
+      const bubbles = document.querySelectorAll('[class*="bg-[#95ec69]"]');
+      if (bubbles.length === 0) return;
+      const bubble = bubbles[0] as HTMLElement;
+      const parent = bubble.closest("[class*='flex justify-end']") || bubble.parentElement?.parentElement;
+      if (!parent) return;
+      const rect = bubble.getBoundingClientRect();
+      parent.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true, clientX: rect.left + 10, clientY: rect.top + 10,
+      }));
+    });
+    await shortWait(500);
 
-    const reply = (await tauriInvoke("send_message", {
-      diaryDayId: day.id, kind: "text", content: "引用回复",
-      imageId: null, articleId: null, mood: null,
-      quoteRefId: firstMsg.id, source: "app",
-    }) as any).ok;
-    expect(reply.quote_ref_id).toBe(firstMsg.id);
+    // Click "引用" in context menu
+    await browser.execute(() => {
+      const btns = document.querySelectorAll(".fixed.z-50 button");
+      for (const b of btns) {
+        if (b.textContent?.includes("引用")) { (b as HTMLElement).click(); return; }
+      }
+    });
+    await shortWait(500);
+
+    // Verify: quote preview bar should appear above input
+    const hasQuoteBar = await browser.execute(() => {
+      const html = document.body.innerHTML;
+      return html.includes("border-l-2") && html.includes("border-accent");
+    });
+    expect(hasQuoteBar).toBe(true);
+
+    // Type and send a reply
+    await reactSetValue("textarea", "这是引用回复");
+    await shortWait(300);
+    await clickByText("button", "发送");
+    await shortWait(1500);
+
+    // Verify: reply with quote block should appear in chat
+    const html = await getPageHtml();
+    expect(html).toContain("这是引用回复");
   });
 
-  it("3.9 should track message source", async () => {
+  it("3.9 should track message source (IPC precondition for telegram source)", async () => {
+    // Telegram source can only be set via IPC (it's a backend-only feature)
     const day = (await tauriInvoke("get_or_create_today") as any).ok;
     const msg = (await tauriInvoke("send_message", {
       diaryDayId: day.id, kind: "text", content: "telegram消息",
@@ -164,25 +194,88 @@ describe("03 - Diary CRUD", () => {
     expect(msg.source).toBe("telegram");
   });
 
-  it("3.10 should edit a message via IPC", async () => {
-    const day = (await tauriInvoke("get_or_create_today") as any).ok;
-    const msgs = (await tauriInvoke("get_messages", { diaryDayId: day.id }) as any).ok;
-    const msg = msgs.find((m: any) => m.content === "来自UI的测试消息");
-    await tauriInvoke("edit_message", { messageId: msg.id, content: "已编辑的消息" });
-    const msgs2 = (await tauriInvoke("get_messages", { diaryDayId: day.id }) as any).ok;
-    const edited = msgs2.find((m: any) => m.id === msg.id);
-    expect(edited.content).toBe("已编辑的消息");
+  it("3.10 should edit a message via right-click menu", async () => {
+    // Right-click on first message
+    await browser.execute(() => {
+      const bubbles = document.querySelectorAll('[class*="bg-[#95ec69]"]');
+      if (bubbles.length === 0) return;
+      const bubble = bubbles[0] as HTMLElement;
+      const parent = bubble.closest("[class*='flex justify-end']") || bubble.parentElement?.parentElement;
+      if (!parent) return;
+      const rect = bubble.getBoundingClientRect();
+      parent.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true, clientX: rect.left + 10, clientY: rect.top + 10,
+      }));
+    });
+    await shortWait(500);
+
+    // Click "编辑"
+    await browser.execute(() => {
+      const btns = document.querySelectorAll(".fixed.z-50 button");
+      for (const b of btns) {
+        if (b.textContent?.includes("编辑")) { (b as HTMLElement).click(); return; }
+      }
+    });
+    await shortWait(500);
+
+    // Verify: editing indicator should appear and textarea should have old content
+    const hasEditingIndicator = await browser.execute(() => {
+      return document.body.innerHTML.includes("正在编辑");
+    });
+    expect(hasEditingIndicator).toBe(true);
+
+    // Clear and type new content
+    await reactSetValue("textarea", "已编辑的消息");
+    await shortWait(300);
+    await clickByText("button", "发送");
+    await shortWait(1500);
+
+    // Verify: edited content appears in chat
+    const html = await getPageHtml();
+    expect(html).toContain("已编辑的消息");
   });
 
-  it("3.11 should delete a message via IPC", async () => {
-    const day = (await tauriInvoke("get_or_create_today") as any).ok;
-    const tmp = (await tauriInvoke("send_message", {
-      diaryDayId: day.id, kind: "text", content: "to_delete",
-      imageId: null, articleId: null, mood: null, quoteRefId: null, source: "app",
-    }) as any).ok;
-    await tauriInvoke("delete_message", { messageId: tmp.id });
-    const msgs = (await tauriInvoke("get_messages", { diaryDayId: day.id }) as any).ok;
-    expect(msgs.find((m: any) => m.content === "to_delete")).toBeUndefined();
+  it("3.11 should delete a message via right-click menu", async () => {
+    // First send a disposable message
+    await reactSetValue("textarea", "即将删除的消息_xyz");
+    await shortWait(300);
+    await clickByText("button", "发送");
+    await shortWait(1500);
+
+    // Verify it exists
+    let html = await getPageHtml();
+    expect(html).toContain("即将删除的消息_xyz");
+
+    // Right-click on that message
+    await browser.execute(() => {
+      const bubbles = document.querySelectorAll('[class*="bg-[#95ec69]"]');
+      for (const b of bubbles) {
+        if (b.textContent?.includes("即将删除的消息_xyz")) {
+          const parent = b.closest("[class*='flex justify-end']") || b.parentElement?.parentElement;
+          if (parent) {
+            const rect = b.getBoundingClientRect();
+            parent.dispatchEvent(new MouseEvent("contextmenu", {
+              bubbles: true, clientX: rect.left + 10, clientY: rect.top + 10,
+            }));
+          }
+          return;
+        }
+      }
+    });
+    await shortWait(500);
+
+    // Click "删除"
+    await browser.execute(() => {
+      const btns = document.querySelectorAll(".fixed.z-50 button");
+      for (const b of btns) {
+        if (b.textContent?.includes("删除")) { (b as HTMLElement).click(); return; }
+      }
+    });
+    await shortWait(1500);
+
+    // Verify: message should be gone
+    html = await getPageHtml();
+    expect(html).not.toContain("即将删除的消息_xyz");
   });
 
   it("3.12 should allow multiple moods per day", async () => {

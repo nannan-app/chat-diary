@@ -9,16 +9,18 @@ interface DiaryState {
   messages: Message[];
   diaryDays: DiaryDay[];
   loading: boolean;
+  tagVersion: number;
 
   setSelectedDate: (date: string) => void;
   loadToday: () => Promise<void>;
   loadDay: (date: string) => Promise<void>;
   loadDiaryList: (year: number, month: number) => Promise<void>;
-  sendTextMessage: (text: string) => Promise<void>;
+  sendTextMessage: (text: string, quoteRefId?: number) => Promise<void>;
   editMessage: (messageId: number, content: string) => Promise<void>;
   deleteMessage: (messageId: number) => Promise<void>;
   sendMoodMessage: (mood: string) => Promise<void>;
   uploadImage: (imageBytes: Uint8Array, compress: boolean) => Promise<void>;
+  bumpTagVersion: () => void;
 }
 
 export const useDiaryStore = create<DiaryState>((set, get) => ({
@@ -27,6 +29,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   messages: [],
   diaryDays: [],
   loading: false,
+  tagVersion: 0,
 
   setSelectedDate: (date: string) => {
     set({ selectedDate: date });
@@ -65,19 +68,20 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     set({ diaryDays: days });
   },
 
-  sendTextMessage: async (text: string) => {
+  sendTextMessage: async (text: string, quoteRefId?: number) => {
     const { currentDay } = get();
     if (!currentDay) return;
 
-    const message = await ipc.sendMessage({
+    await ipc.sendMessage({
       diaryDayId: currentDay.id,
       kind: "text",
       content: text,
+      quoteRefId,
     });
 
-    set((state) => ({
-      messages: [...state.messages, message],
-    }));
+    // Reload messages to get joined fields (quote_content, etc.)
+    const messages = await ipc.getMessages(currentDay.id);
+    set({ messages });
   },
 
   editMessage: async (messageId: number, content: string) => {
@@ -125,4 +129,6 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     const messages = await ipc.getMessages(currentDay.id);
     set({ messages });
   },
+
+  bumpTagVersion: () => set((s) => ({ tagVersion: s.tagVersion + 1 })),
 }));

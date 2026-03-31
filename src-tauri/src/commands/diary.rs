@@ -173,6 +173,29 @@ pub fn get_all_articles(state: State<AppState>) -> Result<Vec<crate::db::models:
     })
 }
 
+/// Get a single article by id
+#[tauri::command]
+pub fn get_article(state: State<AppState>, article_id: i64) -> Result<crate::db::models::Article, MurmurError> {
+    with_db(&state, |conn| {
+        let article = conn.query_row(
+            "SELECT id, diary_day_id, title, content, word_count, created_at, updated_at FROM articles WHERE id = ?1",
+            [article_id],
+            |row| {
+                Ok(crate::db::models::Article {
+                    id: row.get(0)?,
+                    diary_day_id: row.get(1)?,
+                    title: row.get(2)?,
+                    content: row.get(3)?,
+                    word_count: row.get(4)?,
+                    created_at: row.get(5)?,
+                    updated_at: row.get(6)?,
+                })
+            },
+        )?;
+        Ok(article)
+    })
+}
+
 /// Get all dates that have diary entries (for calendar dots)
 #[tauri::command]
 pub fn get_diary_dates(state: State<AppState>, year: i32, month: u32) -> Result<Vec<String>, MurmurError> {

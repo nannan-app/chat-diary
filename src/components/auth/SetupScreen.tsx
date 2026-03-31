@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { BookHeart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../../stores/authStore";
@@ -6,6 +7,7 @@ import { useAuthStore } from "../../stores/authStore";
 type Step = "welcome" | "password" | "hint" | "recovery";
 
 export default function SetupScreen() {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("welcome");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,7 +22,7 @@ export default function SetupScreen() {
       return;
     }
     if (password !== confirmPassword) {
-      setError("两次输入的密码不一致");
+      setError(t("auth.setup.mismatch"));
       return;
     }
     setError("");
@@ -65,12 +67,10 @@ export default function SetupScreen() {
               <BookHeart className="w-10 h-10" />
             </div>
             <h1 className="text-2xl font-light text-text-primary">
-              欢迎使用喃喃
+              {t("auth.setup.title")}
             </h1>
-            <p className="text-text-secondary text-sm text-center leading-relaxed">
-              一个属于你的私密日记本。
-              <br />
-              用聊天的方式，记录每一天。
+            <p className="text-text-secondary text-sm text-center leading-relaxed whitespace-pre-line">
+              {t("auth.setup.subtitle")}
             </p>
             <div className="flex flex-col gap-2 w-full mt-2">
               <button
@@ -78,13 +78,13 @@ export default function SetupScreen() {
                 className="w-full py-2.5 rounded-xl bg-accent text-white font-medium
                            hover:bg-accent-hover active:scale-[0.98] transition-all"
               >
-                创建全新日记本
+                {t("auth.setup.create")}
               </button>
               <button
                 className="w-full py-2.5 rounded-xl bg-white border border-border text-text-primary
                            hover:bg-warm-50 active:scale-[0.98] transition-all"
               >
-                从备份文件导入
+                {t("auth.setup.import")}
               </button>
             </div>
           </>
@@ -92,9 +92,9 @@ export default function SetupScreen() {
 
         {step === "password" && (
           <>
-            <h2 className="text-xl font-light text-text-primary">设置密码</h2>
+            <h2 className="text-xl font-light text-text-primary">{t("auth.setup.password")}</h2>
             <p className="text-text-hint text-sm text-center">
-              这个密码将用于加密你的日记
+              {t("auth.setup.password.desc")}
             </p>
             <div className="flex flex-col gap-3 w-64">
               <input
@@ -112,7 +112,7 @@ export default function SetupScreen() {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="再次输入密码"
+                placeholder={t("auth.setup.confirm")}
                 className="px-4 py-2.5 rounded-xl bg-white border border-border
                            text-center text-text-primary placeholder:text-text-hint
                            focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30
@@ -135,10 +135,10 @@ export default function SetupScreen() {
         {step === "hint" && (
           <>
             <h2 className="text-xl font-light text-text-primary">
-              密码提示（可选）
+              {t("auth.setup.hint.title")}
             </h2>
             <p className="text-text-hint text-sm text-center">
-              帮助你回忆密码的一句话
+              {t("auth.setup.hint.desc")}
             </p>
             <div className="flex flex-col gap-3 w-64">
               <input
@@ -172,12 +172,10 @@ export default function SetupScreen() {
         {step === "recovery" && (
           <>
             <h2 className="text-xl font-light text-text-primary">
-              保存恢复码
+              {t("auth.setup.recovery")}
             </h2>
-            <p className="text-text-hint text-sm text-center leading-relaxed">
-              如果忘记密码，可以使用此恢复码重置。
-              <br />
-              请务必保存到安全的地方。
+            <p className="text-text-hint text-sm text-center leading-relaxed whitespace-pre-line">
+              {t("auth.setup.recovery.desc")}
             </p>
             <div className="bg-white border border-border rounded-xl px-6 py-4 text-center">
               <p className="text-lg font-mono tracking-wider text-text-primary">
@@ -190,14 +188,14 @@ export default function SetupScreen() {
                 className="flex-1 py-2 rounded-xl bg-white border border-border text-text-primary text-sm
                            hover:bg-warm-50 active:scale-[0.98] transition-all"
               >
-                复制
+                {t("auth.setup.copy")}
               </button>
               <button
                 onClick={handleDownloadCode}
                 className="flex-1 py-2 rounded-xl bg-white border border-border text-text-primary text-sm
                            hover:bg-warm-50 active:scale-[0.98] transition-all"
               >
-                下载
+                {t("auth.setup.download")}
               </button>
             </div>
             <button
@@ -205,7 +203,7 @@ export default function SetupScreen() {
               className="w-64 py-2.5 rounded-xl bg-accent text-white font-medium
                          hover:bg-accent-hover active:scale-[0.98] transition-all"
             >
-              开始使用
+              {t("auth.setup.start")}
             </button>
           </>
         )}

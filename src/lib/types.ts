@@ -22,6 +22,7 @@ export interface Message {
   updated_at: string;
   quote_content: string | null;
   thumbnail: number[] | null;
+  article_preview: string | null;
 }
 
 export interface Tag {

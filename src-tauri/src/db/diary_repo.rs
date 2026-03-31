@@ -34,8 +34,8 @@ pub fn get_or_create_day(conn: &Connection, date: &str) -> Result<DiaryDay, Murm
                 date: date.to_string(),
                 summary: None,
                 word_count: 0,
-                created_at: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                updated_at: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                created_at: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                updated_at: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
             })
         }
         Err(e) => Err(e.into()),
@@ -74,10 +74,12 @@ pub fn get_messages(conn: &Connection, diary_day_id: i64) -> Result<Vec<Message>
         "SELECT m.id, m.diary_day_id, m.kind, m.content, m.image_id, m.article_id,
                 m.mood, m.quote_ref_id, m.source, m.sort_order, m.created_at, m.updated_at,
                 q.content as quote_content,
-                i.thumbnail
+                i.thumbnail,
+                SUBSTR(a.content, 1, 200) as article_preview
          FROM messages m
          LEFT JOIN messages q ON m.quote_ref_id = q.id
          LEFT JOIN images i ON m.image_id = i.id
+         LEFT JOIN articles a ON m.article_id = a.id
          WHERE m.diary_day_id = ?1
          ORDER BY m.sort_order ASC",
     )?;
@@ -99,6 +101,7 @@ pub fn get_messages(conn: &Connection, diary_day_id: i64) -> Result<Vec<Message>
                 updated_at: row.get(11)?,
                 quote_content: row.get(12)?,
                 thumbnail: row.get(13)?,
+                article_preview: row.get(14)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
@@ -139,14 +142,14 @@ pub fn insert_message(
     )?;
 
     let id = conn.last_insert_rowid();
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     // Update word count if text message
     if kind == "text" {
         if let Some(text) = content {
             let word_count = text.chars().count() as i64;
             conn.execute(
-                "UPDATE diary_days SET word_count = word_count + ?1, updated_at = datetime('now') WHERE id = ?2",
+                "UPDATE diary_days SET word_count = word_count + ?1, updated_at = datetime('now', 'localtime') WHERE id = ?2",
                 rusqlite::params![word_count, diary_day_id],
             )?;
         }
@@ -175,13 +178,14 @@ pub fn insert_message(
         updated_at: now,
         quote_content: None,
         thumbnail: None,
+        article_preview: None,
     })
 }
 
 /// Edit a message's content
 pub fn edit_message(conn: &Connection, message_id: i64, content: &str) -> Result<(), MurmurError> {
     conn.execute(
-        "UPDATE messages SET content = ?1, updated_at = datetime('now') WHERE id = ?2",
+        "UPDATE messages SET content = ?1, updated_at = datetime('now', 'localtime') WHERE id = ?2",
         rusqlite::params![content, message_id],
     )?;
     // Update FTS

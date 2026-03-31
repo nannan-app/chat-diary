@@ -67,6 +67,13 @@ body {
   -webkit-user-select: none;
 }
 
+/* Allow text selection in message bubbles */
+.select-text {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

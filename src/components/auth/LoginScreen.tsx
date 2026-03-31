@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { BookHeart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "../../stores/authStore";
@@ -6,6 +7,7 @@ import { getPasswordHint, resetPasswordWithRecovery } from "../../lib/ipc";
 import { GREETINGS } from "../../lib/constants";
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [greeting] = useState(
     () => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]
@@ -57,7 +59,7 @@ export default function LoginScreen() {
           transition={{ delay: 0.3 }}
           className="text-2xl font-light text-text-primary"
         >
-          喃喃
+          {t("app.name")}
         </motion.h1>
 
         {/* Greeting */}
@@ -82,7 +84,7 @@ export default function LoginScreen() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="输入密码"
+            placeholder={t("auth.password.placeholder")}
             autoFocus
             className="w-64 px-4 py-2.5 rounded-xl bg-white border border-border
                        text-center text-text-primary placeholder:text-text-hint
@@ -96,7 +98,7 @@ export default function LoginScreen() {
                        hover:bg-accent-hover active:scale-[0.98]
                        transition-all duration-150"
           >
-            进入
+            {t("auth.enter")}
           </button>
         </motion.form>
 
@@ -112,7 +114,7 @@ export default function LoginScreen() {
               onClick={() => setShowHint(!showHint)}
               className="text-xs text-text-hint hover:text-text-secondary transition-colors"
             >
-              密码提示
+              {t("auth.hint")}
             </button>
           )}
 
@@ -133,7 +135,7 @@ export default function LoginScreen() {
             onClick={() => setShowForgot(true)}
             className="text-xs text-text-hint hover:text-accent transition-colors mt-1"
           >
-            忘记密码
+            {t("auth.forgot")}
           </button>
         </motion.div>
       </motion.div>
