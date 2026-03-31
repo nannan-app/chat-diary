@@ -126,14 +126,20 @@ export default function BadgeWall() {
                           : "bg-warm-50/50 border-border opacity-50"
                         }`}
                     >
-                      <div className={`mb-1 ${unlocked ? "" : "grayscale"}`}>
-                        <img src={BADGE_ICONS[a.key]} alt={a.key} className="w-8 h-8 mx-auto" />
+                      <div className="mb-1">
+                        {unlocked ? (
+                          <img src={BADGE_ICONS[a.key]} alt={a.key} className="w-8 h-8 mx-auto" />
+                        ) : (
+                          <div className="w-8 h-8 mx-auto rounded-full bg-warm-200/60 flex items-center justify-center">
+                            <span className="text-text-hint text-base font-bold">?</span>
+                          </div>
+                        )}
                       </div>
                       <p className="text-xs font-medium text-text-primary">
-                        {t(`badge.${a.key}`)}
+                        {unlocked ? t(`badge.${a.key}`) : "???"}
                       </p>
                       <p className="text-xs text-text-hint mt-0.5">
-                        {t(`badge.desc.${a.key}`)}
+                        {unlocked ? t(`badge.desc.${a.key}`) : t("badge.locked")}
                       </p>
                       {unlocked && a.unlocked_at && (
                         <p className="text-xs text-accent mt-1">
