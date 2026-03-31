@@ -226,17 +226,18 @@ pub fn delete_diary_day(conn: &Connection, diary_day_id: i64) -> Result<(), Murm
 /// Search messages and articles
 pub fn search(conn: &Connection, query: &str) -> Result<Vec<super::models::SearchResult>, MurmurError> {
     let mut results = Vec::new();
+    let like_pattern = format!("%{}%", query);
 
-    // Search messages
+    // Search messages using LIKE for substring matching (better CJK support)
     let mut stmt = conn.prepare(
         "SELECT m.id, d.date, m.content
-         FROM messages_fts f
-         JOIN messages m ON m.id = f.rowid
+         FROM messages m
          JOIN diary_days d ON d.id = m.diary_day_id
-         WHERE messages_fts MATCH ?1
+         WHERE m.content LIKE ?1
+         ORDER BY d.date DESC
          LIMIT 50",
     )?;
-    let msg_results = stmt.query_map([query], |row| {
+    let msg_results = stmt.query_map([&like_pattern], |row| {
         Ok(super::models::SearchResult {
             message_id: Some(row.get(0)?),
             article_id: None,
@@ -249,16 +250,16 @@ pub fn search(conn: &Connection, query: &str) -> Result<Vec<super::models::Searc
         results.push(r?);
     }
 
-    // Search articles
+    // Search articles using LIKE for substring matching
     let mut stmt = conn.prepare(
         "SELECT a.id, d.date, a.title
-         FROM articles_fts f
-         JOIN articles a ON a.id = f.rowid
+         FROM articles a
          JOIN diary_days d ON d.id = a.diary_day_id
-         WHERE articles_fts MATCH ?1
+         WHERE a.title LIKE ?1 OR a.content LIKE ?1
+         ORDER BY d.date DESC
          LIMIT 50",
     )?;
-    let art_results = stmt.query_map([query], |row| {
+    let art_results = stmt.query_map([&like_pattern], |row| {
         Ok(super::models::SearchResult {
             message_id: None,
             article_id: Some(row.get(0)?),
