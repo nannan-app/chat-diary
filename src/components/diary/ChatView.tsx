@@ -10,6 +10,7 @@ import MessageInput from "./MessageInput";
 import ImageDropZone from "../shared/ImageDropZone";
 import SeasonalParticles from "../shared/SeasonalParticles";
 import { getDailyPrompts } from "../../lib/constants";
+import chatEmptyImg from "../../assets/illustrations/empty/chat_empty.png";
 
 export default function ChatView() {
   const { t } = useTranslation();
@@ -96,7 +97,7 @@ export default function ChatView() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center h-full gap-4 px-8"
           >
-            <div className="text-6xl">🐱</div>
+            <img src={chatEmptyImg} alt="" className="w-24 h-24" />
             <p className="text-text-hint text-sm text-center leading-relaxed">
               {dailyPrompt}
             </p>

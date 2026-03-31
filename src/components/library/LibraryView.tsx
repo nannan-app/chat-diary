@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import * as ipc from "../../lib/ipc";
 import type { Article } from "../../lib/types";
+import libraryEmptyImg from "../../assets/illustrations/empty/library_empty.png";
 
 export default function LibraryView() {
   const { t } = useTranslation();
@@ -18,7 +19,7 @@ export default function LibraryView() {
     return (
       <div className="h-full flex items-center justify-center text-text-hint">
         <div className="text-center">
-          <p className="text-4xl mb-3">📚</p>
+          <img src={libraryEmptyImg} alt="" className="w-20 h-20 mx-auto mb-3" />
           <p>{t("empty.library")}</p>
         </div>
       </div>

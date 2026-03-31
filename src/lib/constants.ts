@@ -1,4 +1,7 @@
 import i18n from "./i18n";
+import telegramIcon from "../assets/icons/sources/telegram.png";
+import wechatIcon from "../assets/icons/sources/wechat.png";
+import quickCaptureSourceIcon from "../assets/icons/sources/quick_capture.png";
 
 export const getGreetings = () =>
   Array.from({ length: 8 }, (_, i) => i18n.t(`greeting.${i}`));
@@ -58,8 +61,8 @@ export const MOODS = [
 ];
 
 export const SOURCE_ICONS: Record<string, string> = {
-  telegram: "📨",
-  wechat: "💬",
-  quick_capture: "⚡",
+  telegram: telegramIcon,
+  wechat: wechatIcon,
+  quick_capture: quickCaptureSourceIcon,
   app: "",
 };

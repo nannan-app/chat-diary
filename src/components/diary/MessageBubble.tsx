@@ -84,7 +84,7 @@ export default function MessageBubble({ message }: Props) {
             }}
           />
           <div className={`flex items-center gap-1 mt-0.5 ${isUser ? "justify-end" : "justify-start"}`}>
-            {sourceIcon && <span className="text-xs">{sourceIcon}</span>}
+            {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
             <span className="text-xs text-text-hint">{time}</span>
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function MessageBubble({ message }: Props) {
           </div>
           <div className="flex items-center gap-1 mt-0.5 justify-end">
             <span className="text-xs text-text-hint">{time}</span>
-            {sourceIcon && <span className="text-xs">{sourceIcon}</span>}
+            {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
           </div>
         </div>
       </motion.div>
@@ -176,7 +176,7 @@ export default function MessageBubble({ message }: Props) {
         </div>
         <div className={`flex items-center gap-1 mt-0.5 ${isUser ? "flex-row-reverse" : ""}`}>
           <span className="text-xs text-text-hint">{time}</span>
-          {sourceIcon && <span className="text-xs">{sourceIcon}</span>}
+          {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
         </div>
       </div>
     </motion.div>

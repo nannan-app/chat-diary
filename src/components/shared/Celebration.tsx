@@ -4,10 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import * as ipc from "../../lib/ipc";
 
+import celebNewYear from "../../assets/illustrations/celebrations/new_year.png";
+import celebBirthday from "../../assets/illustrations/celebrations/birthday.png";
+import celebAnniversary from "../../assets/illustrations/celebrations/anniversary.png";
+
 export default function Celebration() {
   const { t } = useTranslation();
   const [celebration, setCelebration] = useState<{
-    emoji: string;
+    image: string;
     message: string;
   } | null>(null);
 
@@ -21,7 +25,7 @@ export default function Celebration() {
     if (shown === today.format("YYYY-MM-DD")) return;
 
     if (today.month() === 0 && today.date() === 1) {
-      setCelebration({ emoji: "🎆", message: t("celebration.newYear") });
+      setCelebration({ image: celebNewYear, message: t("celebration.newYear") });
       sessionStorage.setItem("celebration_shown_today", today.format("YYYY-MM-DD"));
       return;
     }
@@ -30,7 +34,7 @@ export default function Celebration() {
     if (birthday) {
       const bd = dayjs(birthday);
       if (bd.month() === today.month() && bd.date() === today.date()) {
-        setCelebration({ emoji: "🎂", message: t("celebration.birthday") });
+        setCelebration({ image: celebBirthday, message: t("celebration.birthday") });
         sessionStorage.setItem("celebration_shown_today", today.format("YYYY-MM-DD"));
         return;
       }
@@ -43,7 +47,7 @@ export default function Celebration() {
       if (diff > 0 && diff % 365 === 0) {
         const years = diff / 365;
         setCelebration({
-          emoji: "🎉",
+          image: celebAnniversary,
           message: t("celebration.anniversary", { years }),
         });
         sessionStorage.setItem("celebration_shown_today", today.format("YYYY-MM-DD"));
@@ -72,9 +76,9 @@ export default function Celebration() {
             <motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ repeat: 2, duration: 0.5 }}
-              className="text-6xl mb-4"
+              className="mb-4"
             >
-              {celebration.emoji}
+              <img src={celebration.image} alt="celebration" className="w-16 h-16 mx-auto" />
             </motion.div>
             <p className="text-text-primary font-medium mb-4">
               {celebration.message}

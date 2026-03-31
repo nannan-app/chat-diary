@@ -5,11 +5,27 @@ import dayjs from "dayjs";
 import * as ipc from "../../lib/ipc";
 import type { Achievement, WritingStats } from "../../lib/types";
 
+import badgeFirstEntry from "../../assets/icons/badges/first_entry.png";
+import badgeSevenDays from "../../assets/icons/badges/seven_days.png";
+import badgeThirtyDays from "../../assets/icons/badges/thirty_days.png";
+import badgeOneYear from "../../assets/icons/badges/one_year.png";
+import badgeThousandWords from "../../assets/icons/badges/thousand_words.png";
+import badgeTenThousandWords from "../../assets/icons/badges/ten_thousand_words.png";
+import badgeHundredThousandWords from "../../assets/icons/badges/hundred_thousand_words.png";
+import badgeSunnyWeek from "../../assets/icons/badges/sunny_week.png";
+import badgeMoodPainter from "../../assets/icons/badges/mood_painter.png";
+import badgeFirstPhoto from "../../assets/icons/badges/first_photo.png";
+import badgeHundredPhotos from "../../assets/icons/badges/hundred_photos.png";
+import badgeAiFirst from "../../assets/icons/badges/ai_first.png";
+import badgeRemoteDelivery from "../../assets/icons/badges/remote_delivery.png";
+import badgeTimeTraveler from "../../assets/icons/badges/time_traveler.png";
+import badgeNightOwl from "../../assets/icons/badges/night_owl.png";
+
 const BADGE_ICONS: Record<string, string> = {
-  first_entry: "✏️", seven_days: "📅", thirty_days: "🌙", one_year: "🌳",
-  thousand_words: "📝", ten_thousand_words: "📖", hundred_thousand_words: "💭",
-  sunny_week: "☀️", mood_painter: "🎨", first_photo: "📷", hundred_photos: "🖼️",
-  ai_first: "🤖", remote_delivery: "📨", time_traveler: "🎲", night_owl: "🦉",
+  first_entry: badgeFirstEntry, seven_days: badgeSevenDays, thirty_days: badgeThirtyDays, one_year: badgeOneYear,
+  thousand_words: badgeThousandWords, ten_thousand_words: badgeTenThousandWords, hundred_thousand_words: badgeHundredThousandWords,
+  sunny_week: badgeSunnyWeek, mood_painter: badgeMoodPainter, first_photo: badgeFirstPhoto, hundred_photos: badgeHundredPhotos,
+  ai_first: badgeAiFirst, remote_delivery: badgeRemoteDelivery, time_traveler: badgeTimeTraveler, night_owl: badgeNightOwl,
 };
 
 const BADGE_CATEGORIES: Record<string, string> = {
@@ -21,12 +37,18 @@ const BADGE_CATEGORIES: Record<string, string> = {
   night_owl: "easter",
 };
 
-function getTreeEmoji(days: number): string {
-  if (days < 7) return "🌱";
-  if (days < 30) return "🌿";
-  if (days < 90) return "🌲";
-  if (days < 365) return "🌳";
-  return "🌴";
+import treeSeedling from "../../assets/illustrations/tree/seedling.png";
+import treeHerb from "../../assets/illustrations/tree/herb.png";
+import treePine from "../../assets/illustrations/tree/pine.png";
+import treeTree from "../../assets/illustrations/tree/tree.png";
+import treePalm from "../../assets/illustrations/tree/palm.png";
+
+function getTreeImage(days: number): string {
+  if (days < 7) return treeSeedling;
+  if (days < 30) return treeHerb;
+  if (days < 90) return treePine;
+  if (days < 365) return treeTree;
+  return treePalm;
 }
 
 export default function BadgeWall() {
@@ -54,9 +76,9 @@ export default function BadgeWall() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-          className="text-6xl mb-3"
+          className="mb-3"
         >
-          {getTreeEmoji(totalDays)}
+          <img src={getTreeImage(totalDays)} alt="growth tree" className="w-16 h-16 mx-auto" />
         </motion.div>
         <motion.p
           initial={{ opacity: 0 }}
@@ -104,8 +126,8 @@ export default function BadgeWall() {
                           : "bg-warm-50/50 border-border opacity-50"
                         }`}
                     >
-                      <div className={`text-2xl mb-1 ${unlocked ? "" : "grayscale"}`}>
-                        {BADGE_ICONS[a.key] || "❓"}
+                      <div className={`mb-1 ${unlocked ? "" : "grayscale"}`}>
+                        <img src={BADGE_ICONS[a.key]} alt={a.key} className="w-8 h-8 mx-auto" />
                       </div>
                       <p className="text-xs font-medium text-text-primary">
                         {t(`badge.${a.key}`)}

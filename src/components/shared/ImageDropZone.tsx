@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDiaryStore } from "../../stores/diaryStore";
+import imageDropImg from "../../assets/illustrations/empty/image_drop.png";
 
 interface Props {
   children: React.ReactNode;
@@ -79,7 +80,7 @@ export default function ImageDropZone({ children }: Props) {
               className="border-2 border-dashed border-accent rounded-2xl px-12 py-8
                          bg-white/80 text-center"
             >
-              <p className="text-2xl mb-2">📷</p>
+              <img src={imageDropImg} alt="" className="w-10 h-10 mx-auto mb-2" />
               <p className="text-accent text-sm font-medium">{t("dropZone.hint")}</p>
             </motion.div>
           </motion.div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDiaryStore } from "../../stores/diaryStore";
+import quickCaptureIcon from "../../assets/icons/sources/quick_capture.png";
 
 export default function QuickCapture() {
   const { t } = useTranslation();
@@ -60,7 +61,7 @@ export default function QuickCapture() {
             className="w-[480px] bg-white rounded-2xl shadow-2xl overflow-hidden"
           >
             <div className="flex items-center gap-3 px-4 py-3">
-              <span className="text-lg">⚡</span>
+              <img src={quickCaptureIcon} alt="" className="w-5 h-5" />
               <input
                 ref={inputRef}
                 type="text"
