@@ -4,6 +4,7 @@ mod db;
 mod error;
 mod media;
 mod state;
+mod telegram;
 
 use tauri::Manager;
 
@@ -103,6 +104,10 @@ pub fn run() {
             commands::export::export_diary_day,
             commands::export::import_database,
             commands::export::delete_all_data,
+            // Telegram
+            commands::telegram::start_telegram_bot,
+            commands::telegram::stop_telegram_bot,
+            commands::telegram::get_telegram_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

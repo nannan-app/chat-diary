@@ -133,6 +133,14 @@ export const getWrongPasswordAction = () =>
 export const setWrongPasswordAction = (action: string) =>
   invoke<void>("set_wrong_password_action", { action });
 
+// Telegram
+export const startTelegramBot = (token: string) =>
+  invoke<{ running: boolean; bot_username: string | null }>("start_telegram_bot", { token });
+export const stopTelegramBot = () =>
+  invoke<{ running: boolean; bot_username: string | null }>("stop_telegram_bot");
+export const getTelegramStatus = () =>
+  invoke<{ running: boolean; bot_username: string | null }>("get_telegram_status");
+
 // Diary - extended
 export const getRandomDiaryDay = () =>
   invoke<DiaryDay | null>("get_random_diary_day");
