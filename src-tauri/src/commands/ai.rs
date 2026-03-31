@@ -160,15 +160,23 @@ async fn call_openai_compatible(
         .await
         .map_err(|e| MurmurError::General(format!("AI request failed: {}", e)))?;
 
+    let status = resp.status();
     let json: serde_json::Value = resp
         .json()
         .await
         .map_err(|e| MurmurError::General(format!("AI response parse failed: {}", e)))?;
 
+    if !status.is_success() {
+        let err_msg = json["error"]["message"].as_str()
+            .or_else(|| json["error"].as_str())
+            .unwrap_or("unknown error");
+        return Err(MurmurError::General(format!("API {} error: {}", status.as_u16(), err_msg)));
+    }
+
     json["choices"][0]["message"]["content"]
         .as_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| MurmurError::General("AI returned empty response".into()))
+        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))
 }
 
 async fn call_google_gemini(
@@ -202,15 +210,21 @@ async fn call_google_gemini(
         .await
         .map_err(|e| MurmurError::General(format!("AI request failed: {}", e)))?;
 
+    let status = resp.status();
     let json: serde_json::Value = resp
         .json()
         .await
         .map_err(|e| MurmurError::General(format!("AI response parse failed: {}", e)))?;
 
+    if !status.is_success() {
+        let err_msg = json["error"]["message"].as_str().unwrap_or("unknown error");
+        return Err(MurmurError::General(format!("API {} error: {}", status.as_u16(), err_msg)));
+    }
+
     json["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| MurmurError::General("AI returned empty response".into()))
+        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))
 }
 
 /// Anthropic Messages API compatible endpoint (used by MiniMax etc.)
@@ -242,15 +256,23 @@ async fn call_anthropic_compatible(
         .await
         .map_err(|e| MurmurError::General(format!("AI request failed: {}", e)))?;
 
+    let status = resp.status();
     let json: serde_json::Value = resp
         .json()
         .await
         .map_err(|e| MurmurError::General(format!("AI response parse failed: {}", e)))?;
 
+    if !status.is_success() {
+        let err_msg = json["error"]["message"].as_str()
+            .or_else(|| json["error"].as_str())
+            .unwrap_or("unknown error");
+        return Err(MurmurError::General(format!("API {} error: {}", status.as_u16(), err_msg)));
+    }
+
     json["content"][0]["text"]
         .as_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| MurmurError::General("AI returned empty response".into()))
+        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))
 }
 
 async fn call_anthropic(
@@ -279,13 +301,21 @@ async fn call_anthropic(
         .await
         .map_err(|e| MurmurError::General(format!("AI request failed: {}", e)))?;
 
+    let status = resp.status();
     let json: serde_json::Value = resp
         .json()
         .await
         .map_err(|e| MurmurError::General(format!("AI response parse failed: {}", e)))?;
 
+    if !status.is_success() {
+        let err_msg = json["error"]["message"].as_str()
+            .or_else(|| json["error"].as_str())
+            .unwrap_or("unknown error");
+        return Err(MurmurError::General(format!("API {} error: {}", status.as_u16(), err_msg)));
+    }
+
     json["content"][0]["text"]
         .as_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| MurmurError::General("AI returned empty response".into()))
+        .ok_or_else(|| MurmurError::General(format!("AI returned unexpected response: {}", json)))
 }
