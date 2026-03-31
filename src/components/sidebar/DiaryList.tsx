@@ -1,17 +1,19 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Calendar, X } from "lucide-react";
+import { Calendar, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import { useDiaryStore } from "../../stores/diaryStore";
-import CalendarPopover from "./CalendarPopover";
 import SearchResults from "./SearchResults";
 import * as ipc from "../../lib/ipc";
 import type { SearchResult, Tag } from "../../lib/types";
 
 export default function DiaryList() {
   const { t } = useTranslation();
-  const [showCalendar, setShowCalendar] = useState(false);
+  const now = dayjs();
+  const [viewYear, setViewYear] = useState(now.year());
+  const [viewMonth, setViewMonth] = useState(now.month() + 1);
+  const [showYearMonthPicker, setShowYearMonthPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -27,13 +29,15 @@ export default function DiaryList() {
   const tagVersion = useDiaryStore((s) => s.tagVersion);
 
   useEffect(() => {
-    const now = dayjs();
-    loadDiaryList(now.year(), now.month() + 1);
-  }, [loadDiaryList]);
+    loadDiaryList(viewYear, viewMonth);
+  }, [loadDiaryList, viewYear, viewMonth]);
 
-  // Load tags for each diary day + all tags for filter
+  // Load tags for each diary day
   useEffect(() => {
-    if (diaryDays.length === 0) return;
+    if (diaryDays.length === 0) {
+      setDayTags({});
+      return;
+    }
     const loadTags = async () => {
       const tagMap: Record<number, Tag[]> = {};
       await Promise.all(
@@ -78,6 +82,29 @@ export default function DiaryList() {
     setSearching(false);
   }, []);
 
+  const goPrevMonth = () => {
+    if (viewMonth === 1) {
+      setViewYear(viewYear - 1);
+      setViewMonth(12);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
+  };
+
+  const goNextMonth = () => {
+    if (viewMonth === 12) {
+      setViewYear(viewYear + 1);
+      setViewMonth(1);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  };
+
+  const viewDate = dayjs(`${viewYear}-${String(viewMonth).padStart(2, "0")}-01`);
+
+  // Year-month picker: show months for the current viewYear
+  const [pickerYear, setPickerYear] = useState(viewYear);
+
   return (
     <div className="h-full flex flex-col bg-sidebar-bg">
       {/* Search + Calendar */}
@@ -94,7 +121,7 @@ export default function DiaryList() {
                        transition-colors"
           />
           <button
-            onClick={() => setShowCalendar(!showCalendar)}
+            onClick={() => { setShowYearMonthPicker(!showYearMonthPicker); setPickerYear(viewYear); }}
             className="px-2 py-1.5 rounded-lg bg-white border border-border hover:bg-warm-100
                        transition-colors text-sm"
             title={t("diary.calendar")}
@@ -103,7 +130,7 @@ export default function DiaryList() {
           </button>
         </div>
 
-        {/* Tag filter chips — show when search focused or tag filter active */}
+        {/* Tag filter chips */}
         <AnimatePresence>
           {(showTagFilter || filterTagId) && allTags.length > 0 && (
             <motion.div
@@ -138,10 +165,60 @@ export default function DiaryList() {
           )}
         </AnimatePresence>
 
-        <CalendarPopover
-          visible={showCalendar}
-          onClose={() => setShowCalendar(false)}
-        />
+        {/* Year-month picker popover */}
+        <AnimatePresence>
+          {showYearMonthPicker && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowYearMonthPicker(false)} />
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.15 }}
+                className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-lg border border-border p-3 mx-2"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <button
+                    onClick={() => setPickerYear(pickerYear - 1)}
+                    className="w-7 h-7 rounded-lg hover:bg-warm-100 flex items-center justify-center text-text-secondary text-sm"
+                  >
+                    ‹
+                  </button>
+                  <span className="text-sm font-medium text-text-primary">{pickerYear}</span>
+                  <button
+                    onClick={() => setPickerYear(pickerYear + 1)}
+                    className="w-7 h-7 rounded-lg hover:bg-warm-100 flex items-center justify-center text-text-secondary text-sm"
+                  >
+                    ›
+                  </button>
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                    const isActive = pickerYear === viewYear && m === viewMonth;
+                    const isCurrent = pickerYear === now.year() && m === now.month() + 1;
+                    return (
+                      <button
+                        key={m}
+                        onClick={() => {
+                          setViewYear(pickerYear);
+                          setViewMonth(m);
+                          setShowYearMonthPicker(false);
+                        }}
+                        className={`py-1.5 rounded-lg text-xs transition-colors
+                          ${isActive ? "bg-accent text-white" : ""}
+                          ${isCurrent && !isActive ? "text-accent font-bold" : ""}
+                          ${!isActive && !isCurrent ? "text-text-primary hover:bg-warm-100" : ""}
+                        `}
+                      >
+                        {m}{t("diary.monthSuffix", { defaultValue: "月" })}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Active filter indicator */}
@@ -152,9 +229,9 @@ export default function DiaryList() {
           </span>
           <span
             className="text-xs text-white px-1.5 py-0.5 rounded-full"
-            style={{ backgroundColor: allTags.find((t) => t.id === filterTagId)?.color }}
+            style={{ backgroundColor: allTags.find((tg) => tg.id === filterTagId)?.color }}
           >
-            {allTags.find((t) => t.id === filterTagId)?.name}
+            {allTags.find((tg) => tg.id === filterTagId)?.name}
           </span>
           <button
             onClick={() => setFilterTagId(null)}
@@ -164,6 +241,13 @@ export default function DiaryList() {
           </button>
         </div>
       )}
+
+      {/* Year-month header */}
+      <div className="px-3 pb-1">
+        <p className="text-xs text-text-hint text-center font-medium">
+          {viewDate.format(t("diary.yearMonthFormat"))}
+        </p>
+      </div>
 
       {/* Search results or day list */}
       {searchResults !== null ? (
@@ -239,11 +323,25 @@ export default function DiaryList() {
 
       )}
 
-      {/* Writing stats */}
+      {/* Bottom: prev/next month + stats */}
       <div className="px-3 py-2 border-t border-border">
-        <p className="text-xs text-text-hint text-center">
-          {t("stats.companion", { days: diaryDays.length })}
-        </p>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={goPrevMonth}
+            className="p-1 rounded-lg hover:bg-warm-100 transition-colors text-text-hint"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <p className="text-xs text-text-hint">
+            {t("stats.companion", { days: diaryDays.length })}
+          </p>
+          <button
+            onClick={goNextMonth}
+            className="p-1 rounded-lg hover:bg-warm-100 transition-colors text-text-hint"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
