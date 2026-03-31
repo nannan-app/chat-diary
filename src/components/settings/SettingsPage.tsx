@@ -194,12 +194,29 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {activeSection === "ai" && (
+          {activeSection === "ai" && (() => {
+            const AI_DEFAULTS: Record<string, { model: string; url: string }> = {
+              openai: { model: "gpt-4o-mini", url: "https://api.openai.com/v1/chat/completions" },
+              anthropic: { model: "claude-sonnet-4-20250514", url: "" },
+              google: { model: "gemini-2.0-flash", url: "" },
+              minimax: { model: "MiniMax-M2.7", url: "https://api.minimaxi.com/anthropic/v1/messages" },
+              minimax_global: { model: "MiniMax-M2.7", url: "https://api.minimax.io/anthropic/v1/messages" },
+              deepseek: { model: "deepseek-chat", url: "https://api.deepseek.com/v1/chat/completions" },
+              ollama: { model: "llama3.2", url: "http://localhost:11434/v1/chat/completions" },
+              custom: { model: "", url: "" },
+            };
+            const switchProvider = async (provider: string) => {
+              const defaults = AI_DEFAULTS[provider] || AI_DEFAULTS.openai;
+              await updateSetting("ai_provider", provider);
+              await updateSetting("ai_model", defaults.model);
+              await updateSetting("ai_base_url", defaults.url);
+            };
+            return (
             <div className="space-y-4">
               <SettingItem label={t("settings.aiProvider")}>
                 <select
                   value={settings.ai_provider || "openai"}
-                  onChange={(e) => updateSetting("ai_provider", e.target.value)}
+                  onChange={(e) => switchProvider(e.target.value)}
                   className="text-sm border border-border rounded-lg px-2 py-1"
                 >
                   <option value="openai">OpenAI</option>
@@ -265,7 +282,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                 />
               </SettingItem>
             </div>
-          )}
+          );})()}
 
           {activeSection === "telegram" && (
             <div className="space-y-4">
