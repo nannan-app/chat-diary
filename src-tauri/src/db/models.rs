@@ -18,6 +18,7 @@ pub struct Message {
     pub content: Option<String>,
     pub image_id: Option<i64>,
     pub article_id: Option<i64>,
+    pub file_id: Option<i64>,
     pub mood: Option<String>,
     pub quote_ref_id: Option<i64>,
     pub source: String,
@@ -28,6 +29,21 @@ pub struct Message {
     pub quote_content: Option<String>,
     pub thumbnail: Option<Vec<u8>>,
     pub article_preview: Option<String>,
+    // Joined fields for file messages
+    pub file_name: Option<String>,
+    pub file_size: Option<i64>,
+    pub file_mime_type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileRecord {
+    pub id: i64,
+    pub diary_day_id: i64,
+    pub file_hash: String,
+    pub original_name: String,
+    pub file_size: i64,
+    pub mime_type: String,
+    pub created_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

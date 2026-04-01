@@ -1,6 +1,6 @@
-use tauri::State;
+use tauri::{Emitter, State};
 
-use crate::db::{diary_repo, models::{DiaryDay, Message, SearchResult}};
+use crate::db::{connection, diary_repo, models::{DiaryDay, Message, SearchResult}};
 use crate::error::MurmurError;
 use crate::state::{AppState, SpaceType};
 
@@ -215,6 +215,53 @@ pub fn get_diary_dates(state: State<AppState>, year: i32, month: u32) -> Result<
 #[tauri::command]
 pub fn search(state: State<AppState>, query: String) -> Result<Vec<SearchResult>, MurmurError> {
     with_db(&state, |conn| diary_repo::search(conn, &query))
+}
+
+/// Quick-capture send: writes a message even when the app is locked.
+/// Opens the private DB directly if the normal path is unavailable.
+/// Emits "quick-capture-sent" so the main window can refresh.
+#[tauri::command]
+pub fn quick_capture_send(
+    app_handle: tauri::AppHandle,
+    state: State<AppState>,
+    content: String,
+) -> Result<Message, MurmurError> {
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+    // Try normal path first (unlocked)
+    let normal_ok = {
+        let space = state.space.lock().unwrap().clone();
+        match space {
+            SpaceType::Private => state.private_db.lock().unwrap().is_some(),
+            SpaceType::Public => state.public_db.lock().unwrap().is_some(),
+        }
+    };
+
+    let msg = if normal_ok {
+        with_db(&state, |conn| {
+            let day = diary_repo::get_or_create_day(conn, &today)?;
+            diary_repo::insert_message(
+                conn, day.id, "text", Some(&content),
+                None, None, None, None, "quick_capture",
+            )
+        })?
+    } else {
+        // Locked — open private DB directly for the write
+        let private_db_path = state.data_dir.join("private.db");
+        if !private_db_path.exists() {
+            return Err(MurmurError::NotAuthenticated);
+        }
+        let conn = connection::open_or_create(&private_db_path)?;
+        let day = diary_repo::get_or_create_day(&conn, &today)?;
+        diary_repo::insert_message(
+            &conn, day.id, "text", Some(&content),
+            None, None, None, None, "quick_capture",
+        )?
+    };
+
+    // Notify main window to refresh
+    app_handle.emit("quick-capture-sent", ()).ok();
+    Ok(msg)
 }
 
 /// Get a random diary day that has entries

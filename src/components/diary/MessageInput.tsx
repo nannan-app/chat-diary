@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, SmilePlus, Bot, Tag, PenLine } from "lucide-react";
+import { Camera, SmilePlus, Bot, Tag, PenLine, Paperclip } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -33,6 +33,7 @@ export default function MessageInput() {
   const sendTextMessage = useDiaryStore((s) => s.sendTextMessage);
   const sendMoodMessage = useDiaryStore((s) => s.sendMoodMessage);
   const uploadImageFn = useDiaryStore((s) => s.uploadImage);
+  const uploadFileFn = useDiaryStore((s) => s.uploadFile);
   const quoteMessage = useUIStore((s) => s.quoteMessage);
   const setQuoteMessage = useUIStore((s) => s.setQuoteMessage);
   const editingMessage = useUIStore((s) => s.editingMessage);
@@ -146,6 +147,58 @@ export default function MessageInput() {
     }
   };
 
+  const mimeMap: Record<string, string> = {
+    pdf: "application/pdf",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ppt: "application/vnd.ms-powerpoint",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    txt: "text/plain",
+    md: "text/markdown",
+    csv: "text/csv",
+    json: "application/json",
+    zip: "application/zip",
+    rar: "application/x-rar-compressed",
+    "7z": "application/x-7z-compressed",
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    flac: "audio/flac",
+    aac: "audio/aac",
+    m4a: "audio/mp4",
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    avi: "video/x-msvideo",
+    mkv: "video/x-matroska",
+    webm: "video/webm",
+  };
+
+  const handleFileUpload = async () => {
+    try {
+      const selected = await open({
+        multiple: true,
+      });
+      if (!selected) return;
+
+      const paths = Array.isArray(selected) ? selected : [selected];
+      for (const filePath of paths) {
+        const ext = filePath.split(".").pop()?.toLowerCase() || "";
+        const mimeType = mimeMap[ext] || "application/octet-stream";
+        const fileName = filePath.split("/").pop() || filePath.split("\\").pop() || "file";
+
+        const bytes = await readFile(filePath);
+        await uploadFileFn(bytes, fileName, mimeType);
+      }
+      setUploadError(null);
+    } catch (e: any) {
+      console.log("File upload error:", e);
+      setUploadError(t("upload.fileFailed") + ": " + String(e));
+      setTimeout(() => setUploadError(null), 5000);
+    }
+  };
+
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     isDragging.current = true;
@@ -248,6 +301,13 @@ export default function MessageInput() {
           title={t("toolbar.image")}
         >
           <Camera className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleFileUpload}
+          className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
+          title={t("toolbar.file")}
+        >
+          <Paperclip className="w-4 h-4" />
         </button>
         <button
           onClick={() => setShowMoodPanel(!showMoodPanel)}

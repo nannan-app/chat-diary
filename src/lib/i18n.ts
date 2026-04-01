@@ -80,6 +80,7 @@ const resources = {
       "diary.noTagResults": "没有包含该标签的日记",
       "diary.noEntries": "这个月还没有日记",
       // Diary toolbar
+      "toolbar.file": "插入文件",
       "toolbar.image": "插入图片",
       "toolbar.mood": "心情",
       "toolbar.ai": "AI 总结与反馈",
@@ -313,11 +314,14 @@ const resources = {
       "quickCapture.hint": "按 Enter 记录到今天的日记，Esc 关闭",
       // Image drop zone
       "dropZone.hint": "放在这里吧~",
+      "dropZone.fileHint": "拖放文件到这里~",
       // Common
       "common.cancel": "取消",
       // Image upload errors
       "upload.failed": "图片上传失败",
+      "upload.fileFailed": "文件上传失败",
       "upload.formatError": "不支持的图片格式，请使用 JPG、PNG、WebP 或 GIF",
+      "diary.file.unknown": "未知文件",
     },
   },
   en: {
@@ -391,6 +395,7 @@ const resources = {
       "diary.filter": "Filter:",
       "diary.noTagResults": "No entries with this tag",
       "diary.noEntries": "No entries this month",
+      "toolbar.file": "Insert file",
       "toolbar.image": "Insert image",
       "toolbar.mood": "Mood",
       "toolbar.ai": "AI Summary",
@@ -606,9 +611,12 @@ const resources = {
       "quickCapture.send": "Save",
       "quickCapture.hint": "Press Enter to save to today's diary, Esc to close",
       "dropZone.hint": "Drop here~",
+      "dropZone.fileHint": "Drop files here~",
       "common.cancel": "Cancel",
       "upload.failed": "Image upload failed",
+      "upload.fileFailed": "File upload failed",
       "upload.formatError": "Unsupported image format. Please use JPG, PNG, WebP, or GIF",
+      "diary.file.unknown": "Unknown file",
     },
   },
 };

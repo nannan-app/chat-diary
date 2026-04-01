@@ -12,6 +12,7 @@ export default function ImageDropZone({ children }: Props) {
   const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
   const uploadImage = useDiaryStore((s) => s.uploadImage);
+  const uploadFile = useDiaryStore((s) => s.uploadFile);
   let dragCounter = 0;
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -39,13 +40,17 @@ export default function ImageDropZone({ children }: Props) {
     setIsDragging(false);
     dragCounter = 0;
 
-    const files = Array.from(e.dataTransfer.files).filter((f) =>
-      f.type.startsWith("image/")
-    );
-
-    for (const file of files) {
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    for (const file of droppedFiles) {
       const buffer = await file.arrayBuffer();
-      await uploadImage(new Uint8Array(buffer), true);
+      const bytes = new Uint8Array(buffer);
+
+      if (file.type.startsWith("image/")) {
+        await uploadImage(bytes, true);
+      } else {
+        const mimeType = file.type || "application/octet-stream";
+        await uploadFile(bytes, file.name, mimeType);
+      }
     }
   };
 
@@ -81,7 +86,7 @@ export default function ImageDropZone({ children }: Props) {
                          bg-white/80 text-center"
             >
               <img src={imageDropImg} alt="" className="w-10 h-10 mx-auto mb-2" />
-              <p className="text-accent text-sm font-medium">{t("dropZone.hint")}</p>
+              <p className="text-accent text-sm font-medium">{t("dropZone.fileHint")}</p>
             </motion.div>
           </motion.div>
         )}

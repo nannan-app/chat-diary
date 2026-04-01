@@ -83,6 +83,17 @@ export const getFullImage = (imageId: number) =>
 export const getThumbnail = (imageId: number) =>
   invoke<number[]>("get_thumbnail", { imageId });
 
+// Files
+export const uploadFile = (
+  diaryDayId: number,
+  fileBytes: number[],
+  fileName: string,
+  mimeType: string
+) =>
+  invoke<Message>("upload_file", { diaryDayId, fileBytes, fileName, mimeType });
+export const getFileData = (fileId: number) =>
+  invoke<number[]>("get_file_data", { fileId });
+
 // Tags
 export const getTags = () => invoke<Tag[]>("get_tags");
 export const createTag = (name: string) => invoke<Tag>("create_tag", { name });
@@ -152,6 +163,8 @@ export const updateQuickCaptureShortcut = (shortcut: string) =>
 // Diary - extended
 export const getRandomDiaryDay = () =>
   invoke<DiaryDay | null>("get_random_diary_day");
+export const quickCaptureSend = (content: string) =>
+  invoke<Message>("quick_capture_send", { content });
 
 // Media - extended
 export const listAllImagesWithThumbnails = () =>

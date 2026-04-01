@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { listen } from "@tauri-apps/api/event";
 import dayjs from "dayjs";
 import { useUIStore } from "../../stores/uiStore";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -39,6 +40,20 @@ export default function AppShell() {
       }
     });
   }, [loadToday]);
+
+  // Refresh messages when quick-capture sends a new message
+  useEffect(() => {
+    const unlisten = listen("quick-capture-sent", () => {
+      const { selectedDate, loadDay, loadToday } = useDiaryStore.getState();
+      const today = dayjs().format("YYYY-MM-DD");
+      if (selectedDate === today) {
+        loadToday();
+      } else {
+        loadDay(selectedDate);
+      }
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, []);
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(

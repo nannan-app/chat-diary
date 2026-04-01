@@ -73,14 +73,17 @@ pub fn list_days(conn: &Connection, year: i32, month: u32) -> Result<Vec<DiaryDa
 pub fn get_messages(conn: &Connection, diary_day_id: i64) -> Result<Vec<Message>, MurmurError> {
     let mut stmt = conn.prepare(
         "SELECT m.id, m.diary_day_id, m.kind, m.content, m.image_id, m.article_id,
-                m.mood, m.quote_ref_id, m.source, m.sort_order, m.created_at, m.updated_at,
+                m.file_id, m.mood, m.quote_ref_id, m.source, m.sort_order,
+                m.created_at, m.updated_at,
                 q.content as quote_content,
                 i.thumbnail,
-                SUBSTR(a.content, 1, 200) as article_preview
+                SUBSTR(a.content, 1, 200) as article_preview,
+                f.original_name, f.file_size, f.mime_type
          FROM messages m
          LEFT JOIN messages q ON m.quote_ref_id = q.id
          LEFT JOIN images i ON m.image_id = i.id
          LEFT JOIN articles a ON m.article_id = a.id
+         LEFT JOIN files f ON m.file_id = f.id
          WHERE m.diary_day_id = ?1
          ORDER BY m.sort_order ASC",
     )?;
@@ -94,15 +97,19 @@ pub fn get_messages(conn: &Connection, diary_day_id: i64) -> Result<Vec<Message>
                 content: row.get(3)?,
                 image_id: row.get(4)?,
                 article_id: row.get(5)?,
-                mood: row.get(6)?,
-                quote_ref_id: row.get(7)?,
-                source: row.get(8)?,
-                sort_order: row.get(9)?,
-                created_at: row.get(10)?,
-                updated_at: row.get(11)?,
-                quote_content: row.get(12)?,
-                thumbnail: row.get(13)?,
-                article_preview: row.get(14)?,
+                file_id: row.get(6)?,
+                mood: row.get(7)?,
+                quote_ref_id: row.get(8)?,
+                source: row.get(9)?,
+                sort_order: row.get(10)?,
+                created_at: row.get(11)?,
+                updated_at: row.get(12)?,
+                quote_content: row.get(13)?,
+                thumbnail: row.get(14)?,
+                article_preview: row.get(15)?,
+                file_name: row.get(16)?,
+                file_size: row.get(17)?,
+                file_mime_type: row.get(18)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
@@ -134,12 +141,28 @@ pub fn insert_message(
     quote_ref_id: Option<i64>,
     source: &str,
 ) -> Result<Message, MurmurError> {
+    insert_message_full(conn, diary_day_id, kind, content, image_id, article_id, None, mood, quote_ref_id, source)
+}
+
+/// Insert a new message with file_id support
+pub fn insert_message_full(
+    conn: &Connection,
+    diary_day_id: i64,
+    kind: &str,
+    content: Option<&str>,
+    image_id: Option<i64>,
+    article_id: Option<i64>,
+    file_id: Option<i64>,
+    mood: Option<&str>,
+    quote_ref_id: Option<i64>,
+    source: &str,
+) -> Result<Message, MurmurError> {
     let sort_order = next_sort_order(conn, diary_day_id)?;
 
     conn.execute(
-        "INSERT INTO messages (diary_day_id, kind, content, image_id, article_id, mood, quote_ref_id, source, sort_order)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-        rusqlite::params![diary_day_id, kind, content, image_id, article_id, mood, quote_ref_id, source, sort_order],
+        "INSERT INTO messages (diary_day_id, kind, content, image_id, article_id, file_id, mood, quote_ref_id, source, sort_order)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+        rusqlite::params![diary_day_id, kind, content, image_id, article_id, file_id, mood, quote_ref_id, source, sort_order],
     )?;
 
     let id = conn.last_insert_rowid();
@@ -171,6 +194,7 @@ pub fn insert_message(
         content: content.map(|s| s.to_string()),
         image_id,
         article_id,
+        file_id,
         mood: mood.map(|s| s.to_string()),
         quote_ref_id,
         source: source.to_string(),
@@ -180,6 +204,9 @@ pub fn insert_message(
         quote_content: None,
         thumbnail: None,
         article_preview: None,
+        file_name: None,
+        file_size: None,
+        file_mime_type: None,
     })
 }
 

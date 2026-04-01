@@ -10,10 +10,11 @@ export interface DiaryDay {
 export interface Message {
   id: number;
   diary_day_id: number;
-  kind: "text" | "image" | "mood" | "ai_reply" | "article" | "tag_change" | "system";
+  kind: "text" | "image" | "mood" | "ai_reply" | "article" | "tag_change" | "system" | "file";
   content: string | null;
   image_id: number | null;
   article_id: number | null;
+  file_id: number | null;
   mood: string | null;
   quote_ref_id: number | null;
   source: "app" | "telegram" | "wechat" | "quick_capture";
@@ -23,6 +24,9 @@ export interface Message {
   quote_content: string | null;
   thumbnail: number[] | null;
   article_preview: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  file_mime_type: string | null;
 }
 
 export interface Tag {

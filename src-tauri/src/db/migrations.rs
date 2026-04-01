@@ -26,6 +26,10 @@ pub fn run_migrations(conn: &Connection) -> Result<(), MurmurError> {
         migrate_v3(conn)?;
     }
 
+    if version < 4 {
+        migrate_v4(conn)?;
+    }
+
     Ok(())
 }
 
@@ -190,6 +194,63 @@ fn migrate_v3(conn: &Connection) -> Result<(), MurmurError> {
         INSERT INTO schema_version (version) VALUES (3);
         "
     )?;
+    Ok(())
+}
+
+fn migrate_v4(conn: &Connection) -> Result<(), MurmurError> {
+    // Disable FK checks during table recreation
+    conn.execute_batch("PRAGMA foreign_keys=OFF;")?;
+
+    conn.execute_batch(
+        "
+        CREATE TABLE IF NOT EXISTS files (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            diary_day_id    INTEGER NOT NULL REFERENCES diary_days(id) ON DELETE CASCADE,
+            file_hash       TEXT NOT NULL UNIQUE,
+            original_name   TEXT NOT NULL,
+            file_size       INTEGER NOT NULL,
+            mime_type       TEXT NOT NULL,
+            created_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+
+        -- Recreate messages table with updated CHECK constraint and new file_id column.
+        CREATE TABLE messages_new (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            diary_day_id    INTEGER NOT NULL REFERENCES diary_days(id) ON DELETE CASCADE,
+            kind            TEXT NOT NULL CHECK (kind IN (
+                                'text', 'image', 'mood', 'ai_reply',
+                                'article', 'tag_change', 'system', 'file'
+                            )),
+            content         TEXT,
+            image_id        INTEGER REFERENCES images(id),
+            article_id      INTEGER REFERENCES articles(id),
+            file_id         INTEGER REFERENCES files(id),
+            mood            TEXT,
+            quote_ref_id    INTEGER REFERENCES messages_new(id),
+            source          TEXT DEFAULT 'app' CHECK (source IN ('app', 'telegram', 'wechat', 'quick_capture')),
+            sort_order      INTEGER NOT NULL,
+            created_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+            updated_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+
+        INSERT INTO messages_new (id, diary_day_id, kind, content, image_id, article_id, mood, quote_ref_id, source, sort_order, created_at, updated_at)
+            SELECT id, diary_day_id, kind, content, image_id, article_id, mood, quote_ref_id, source, sort_order, created_at, updated_at
+            FROM messages;
+
+        DROP TABLE messages;
+        ALTER TABLE messages_new RENAME TO messages;
+        CREATE INDEX IF NOT EXISTS idx_messages_day ON messages(diary_day_id, sort_order);
+
+        -- Rebuild FTS to point at the new messages table
+        INSERT INTO messages_fts(messages_fts) VALUES('rebuild');
+
+        INSERT INTO schema_version (version) VALUES (4);
+        "
+    )?;
+
+    // Re-enable FK checks
+    conn.execute_batch("PRAGMA foreign_keys=ON;")?;
+
     Ok(())
 }
 

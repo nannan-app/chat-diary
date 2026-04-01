@@ -121,11 +121,14 @@ pub fn run() {
             commands::diary::get_diary_dates,
             commands::diary::search,
             commands::diary::get_random_diary_day,
+            commands::diary::quick_capture_send,
             // Media
             commands::media::upload_image,
             commands::media::get_full_image,
             commands::media::get_thumbnail,
             commands::media::list_all_images_with_thumbnails,
+            commands::media::upload_file,
+            commands::media::get_file_data,
             // Settings
             commands::settings::get_setting,
             commands::settings::set_setting,

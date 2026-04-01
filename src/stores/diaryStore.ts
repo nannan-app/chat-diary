@@ -20,6 +20,7 @@ interface DiaryState {
   deleteMessage: (messageId: number) => Promise<void>;
   sendMoodMessage: (mood: string) => Promise<void>;
   uploadImage: (imageBytes: Uint8Array, compress: boolean) => Promise<void>;
+  uploadFile: (fileBytes: Uint8Array, fileName: string, mimeType: string) => Promise<void>;
   bumpTagVersion: () => void;
 }
 
@@ -126,6 +127,22 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     );
 
     // Reload messages to get the thumbnail
+    const messages = await ipc.getMessages(currentDay.id);
+    set({ messages });
+  },
+
+  uploadFile: async (fileBytes: Uint8Array, fileName: string, mimeType: string) => {
+    const { currentDay } = get();
+    if (!currentDay) return;
+
+    await ipc.uploadFile(
+      currentDay.id,
+      Array.from(fileBytes),
+      fileName,
+      mimeType
+    );
+
+    // Reload messages to get joined fields
     const messages = await ipc.getMessages(currentDay.id);
     set({ messages });
   },

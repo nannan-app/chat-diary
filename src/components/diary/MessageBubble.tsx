@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
-import { FileText, ChevronDown, ChevronRight, Brain, Bot } from "lucide-react";
+import { FileText, ChevronDown, ChevronRight, Brain, Bot, File, FileAudio, FileVideo, Download } from "lucide-react";
 import type { Message } from "../../lib/types";
 import { useUIStore } from "../../stores/uiStore";
 import { SOURCE_ICONS } from "../../lib/constants";
@@ -87,6 +87,79 @@ export default function MessageBubble({ message }: Props) {
           <div className={`flex items-center gap-1 mt-0.5 ${isUser ? "justify-end" : "justify-start"}`}>
             {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
             <span className="text-xs text-text-hint">{time}</span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // File message
+  if (message.kind === "file" && message.file_id) {
+    const fileName = message.file_name || message.content || t("diary.file.unknown");
+    const fileMime = message.file_mime_type || "";
+    const fileSize = message.file_size;
+
+    // Choose icon based on mime type
+    let FileIcon = File;
+    if (fileMime.startsWith("audio/")) FileIcon = FileAudio;
+    else if (fileMime.startsWith("video/")) FileIcon = FileVideo;
+    else if (fileMime.includes("pdf") || fileMime.includes("document") || fileMime.includes("text"))
+      FileIcon = FileText;
+
+    // Format file size
+    const formatSize = (bytes: number) => {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    };
+
+    const handleDownload = async () => {
+      try {
+        const { save } = await import("@tauri-apps/plugin-dialog");
+        const { writeFile } = await import("@tauri-apps/plugin-fs");
+        const { getFileData } = await import("../../lib/ipc");
+
+        const savePath = await save({ defaultPath: fileName });
+        if (!savePath) return;
+
+        const data = await getFileData(message.file_id!);
+        await writeFile(savePath, new Uint8Array(data));
+      } catch (e) {
+        console.log("File download error:", e);
+      }
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        className={`flex justify-end mb-2 px-4 ${highlightClass}`}
+        data-message-id={message.id}
+        onContextMenu={handleContextMenu}
+      >
+        <div className="max-w-[70%]">
+          <div
+            onClick={handleDownload}
+            className="bg-white rounded-2xl rounded-tr-md shadow-sm border border-border/50
+                       px-4 py-3 cursor-pointer hover:shadow-md transition-shadow min-w-[200px]
+                       flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+              <FileIcon className="w-5 h-5 text-accent" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-text-primary truncate">{fileName}</p>
+              <p className="text-xs text-text-hint mt-0.5">
+                {fileSize ? formatSize(fileSize) : ""}
+              </p>
+            </div>
+            <Download className="w-4 h-4 text-text-hint flex-shrink-0" />
+          </div>
+          <div className="flex items-center gap-1 mt-0.5 justify-end">
+            <span className="text-xs text-text-hint">{time}</span>
+            {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
           </div>
         </div>
       </motion.div>

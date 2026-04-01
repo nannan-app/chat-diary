@@ -72,8 +72,7 @@ export default function QuickCapture() {
     if (!trimmed || saving) return;
     setSaving(true);
     try {
-      const day = await ipc.getOrCreateToday();
-      await ipc.sendMessage({ diaryDayId: day.id, kind: "text", content: trimmed, source: "quick_capture" });
+      await ipc.quickCaptureSend(trimmed);
       setText("");
       hideWindow();
     } catch (e) {
