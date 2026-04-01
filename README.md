@@ -34,6 +34,18 @@ Built with **Tauri v2** (Rust backend + React frontend).
 | Animations | Framer Motion |
 | i18n | react-i18next |
 
+## Installation Notes
+
+### macOS
+
+The app is not signed with an Apple Developer certificate. macOS will block it on first launch. Run this command to allow it:
+
+```bash
+xattr -cr /Applications/Murmur.app
+```
+
+Then open the app normally.
+
 ## Development
 
 ### Prerequisites
