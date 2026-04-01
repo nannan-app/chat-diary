@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, PenLine } from "lucide-react";
+import { CalendarDays, PenLine, Download } from "lucide-react";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import dayjs from "dayjs";
 import * as ipc from "../../lib/ipc";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -40,6 +42,15 @@ export default function LibraryView() {
       setSelectedDate(article.date);
       setActiveNav("diary");
     }
+  };
+
+  const handleExportArticle = async (article: Article) => {
+    setCtxMenu(null);
+    const safeName = article.title.replace(/[/\\?%*:|"<>]/g, "_").slice(0, 50);
+    const path = await save({ defaultPath: `${safeName}.md` });
+    if (!path) return;
+    const content = await ipc.exportArticle(article.id);
+    await writeTextFile(path, content);
   };
 
   if (articles.length === 0) {
@@ -108,6 +119,13 @@ export default function LibraryView() {
                   {t("library.jumpToDiary")}
                 </button>
               )}
+              <button
+                onClick={() => handleExportArticle(selected)}
+                className="text-accent hover:text-accent/80 transition-colors flex items-center gap-1"
+              >
+                <Download className="w-3 h-3" />
+                {t("article.export")}
+              </button>
             </div>
             <div
               className="prose prose-sm max-w-none text-text-primary"
@@ -140,6 +158,14 @@ export default function LibraryView() {
             >
               <CalendarDays className="w-3.5 h-3.5" />
               {t("library.jumpToDiary")}
+            </button>
+            <button
+              onClick={() => handleExportArticle(ctxMenu.article)}
+              className="w-full px-3 py-1.5 text-left text-sm text-text-primary hover:bg-warm-100
+                         transition-colors flex items-center gap-2"
+            >
+              <Download className="w-3.5 h-3.5" />
+              {t("article.export")}
             </button>
           </motion.div>
         )}

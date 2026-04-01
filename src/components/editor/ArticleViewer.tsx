@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Download } from "lucide-react";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { useUIStore } from "../../stores/uiStore";
 import * as ipc from "../../lib/ipc";
 import type { Article } from "../../lib/types";
@@ -59,6 +61,19 @@ export default function ArticleViewer() {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-border/50 flex items-center justify-between">
           <span className="text-xs text-text-hint">{article.word_count} {t("diary.words")}</span>
+          <button
+            onClick={async () => {
+              const safeName = article.title.replace(/[/\\?%*:|"<>]/g, "_").slice(0, 50);
+              const path = await save({ defaultPath: `${safeName}.md` });
+              if (!path) return;
+              const content = await ipc.exportArticle(article.id);
+              await writeTextFile(path, content);
+            }}
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {t("article.export")}
+          </button>
           <span className="text-xs text-text-hint">{article.created_at}</span>
         </div>
       </motion.div>

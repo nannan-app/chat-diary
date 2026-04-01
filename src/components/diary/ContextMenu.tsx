@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Quote, Pencil, Star, Tag as TagIcon, Trash2 } from "lucide-react";
+import { Quote, Pencil, Star, Tag as TagIcon, Trash2, Download } from "lucide-react";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore } from "../../stores/uiStore";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -103,6 +105,18 @@ export default function ContextMenu() {
       }
     },
     { label: t("menu.tag"), icon: TagIcon, action: handleTagClick, keepOpen: true },
+    // Export article as Markdown (only for article messages)
+    ...(message?.kind === "article" && message?.article_id ? [{
+      label: t("article.export"), icon: Download, action: async () => {
+        hideContextMenu();
+        const title = message.content || "article";
+        const safeName = title.replace(/[/\\?%*:|"<>]/g, "_").slice(0, 50);
+        const path = await save({ defaultPath: `${safeName}.md` });
+        if (!path) return;
+        const content = await ipc.exportArticle(message.article_id!);
+        await writeTextFile(path, content);
+      }
+    }] : []),
     { label: t("menu.delete"), icon: Trash2, action: handleDelete, danger: true },
   ];
 

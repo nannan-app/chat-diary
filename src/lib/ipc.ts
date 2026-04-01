@@ -184,6 +184,8 @@ export const exportDatabase = (outputPath: string) =>
   invoke<void>("export_database", { outputPath });
 export const exportDiaryDay = (diaryDayId: number, format: string) =>
   invoke<string>("export_diary_day", { diaryDayId, format });
+export const exportArticle = (articleId: number) =>
+  invoke<string>("export_article", { articleId });
 export const deleteAllData = () =>
   invoke<void>("delete_all_data");
 export const importDatabase = (zipPath: string, password: string) =>

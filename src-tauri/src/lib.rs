@@ -155,6 +155,7 @@ pub fn run() {
             // Export
             commands::export::export_database,
             commands::export::export_diary_day,
+            commands::export::export_article,
             commands::export::import_database,
             commands::export::delete_all_data,
             // Telegram

@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Calendar, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Calendar, X, ChevronLeft, ChevronRight, Trash2, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
-import { ask } from "@tauri-apps/plugin-dialog";
+import { ask, save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { useDiaryStore } from "../../stores/diaryStore";
 import SearchResults from "./SearchResults";
 import * as ipc from "../../lib/ipc";
@@ -420,6 +421,20 @@ export default function DiaryList() {
             className="fixed z-50 bg-white rounded-lg shadow-lg border border-border py-1 min-w-[120px]"
             style={{ left: ctxMenu.x, top: ctxMenu.y }}
           >
+            <button
+              onClick={async () => {
+                setCtxMenu(null);
+                const path = await save({ defaultPath: `diary_${ctxMenu.date}.md` });
+                if (!path) return;
+                const content = await ipc.exportDiaryDay(ctxMenu.dayId, "document");
+                await writeTextFile(path, content);
+              }}
+              className="w-full px-3 py-1.5 text-left text-sm text-text-primary hover:bg-warm-100
+                         transition-colors flex items-center gap-2"
+            >
+              <Download className="w-3.5 h-3.5" />
+              {t("diary.export")}
+            </button>
             <button
               onClick={() => handleDeleteDay(ctxMenu.dayId, ctxMenu.date)}
               className="w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-50

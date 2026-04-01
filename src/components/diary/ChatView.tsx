@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { PanelLeftClose, PanelLeftOpen, Trash2 } from "lucide-react";
-import { ask } from "@tauri-apps/plugin-dialog";
+import { PanelLeftClose, PanelLeftOpen, Trash2, Download } from "lucide-react";
+import { ask, save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -12,6 +13,15 @@ import ImageDropZone from "../shared/ImageDropZone";
 import SeasonalParticles from "../shared/SeasonalParticles";
 import { getDailyPrompts } from "../../lib/constants";
 import chatEmptyImg from "../../assets/illustrations/empty/chat_empty.png";
+import * as ipc from "../../lib/ipc";
+
+async function saveDiaryExport(diaryDayId: number, date: string, format: string) {
+  const ext = format === "document" ? "md" : "txt";
+  const path = await save({ defaultPath: `diary_${date}.${ext}` });
+  if (!path) return;
+  const content = await ipc.exportDiaryDay(diaryDayId, format);
+  await writeTextFile(path, content);
+}
 
 export default function ChatView() {
   const { t } = useTranslation();
@@ -85,23 +95,32 @@ export default function ChatView() {
         <span className="flex-1 text-center text-xs text-text-hint">
           {dayjs(selectedDate).format(t("diary.dateFormat"))}
         </span>
-        {currentDay && messages.length > 0 ? (
-          <button
-            onClick={async () => {
-              const yes = await ask(t("diary.deleteDay.confirm"), {
-                title: t("diary.deleteDay"),
-                kind: "warning",
-              });
-              if (yes) deleteDiaryDay();
-            }}
-            className="p-1 rounded-lg hover:bg-red-50 transition-colors text-text-hint hover:text-red-500"
-            title={t("diary.deleteDay")}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        ) : (
-          <div className="w-6" />
-        )}
+        <div className="flex items-center gap-0.5">
+          {currentDay && messages.length > 0 && (
+            <>
+              <button
+                onClick={() => saveDiaryExport(currentDay.id, selectedDate, "document")}
+                className="p-1 rounded-lg hover:bg-warm-100 transition-colors text-text-hint hover:text-text-secondary"
+                title={t("diary.export.document")}
+              >
+                <Download className="w-4 h-4" />
+              </button>
+              <button
+                onClick={async () => {
+                  const yes = await ask(t("diary.deleteDay.confirm"), {
+                    title: t("diary.deleteDay"),
+                    kind: "warning",
+                  });
+                  if (yes) deleteDiaryDay();
+                }}
+                className="p-1 rounded-lg hover:bg-red-50 transition-colors text-text-hint hover:text-red-500"
+                title={t("diary.deleteDay")}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Messages area */}

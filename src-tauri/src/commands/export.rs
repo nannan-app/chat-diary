@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use tauri::State;
 
 use crate::error::MurmurError;
-use crate::state::AppState;
+use crate::state::{AppState, SpaceType};
 
 /// Export database + media to a zip file
 #[tauri::command]
@@ -353,6 +353,26 @@ pub fn export_diary_day(
     }
 
     Ok(output)
+}
+
+/// Export a single article as Markdown
+#[tauri::command]
+pub fn export_article(state: State<AppState>, article_id: i64) -> Result<String, MurmurError> {
+    let space = state.space.lock().unwrap().clone();
+    let db_lock = match space {
+        SpaceType::Private => state.private_db.lock().unwrap(),
+        SpaceType::Public => state.public_db.lock().unwrap(),
+    };
+    let conn = db_lock.as_ref().ok_or(MurmurError::NotAuthenticated)?;
+
+    let (title, content, created_at): (String, String, String) = conn.query_row(
+        "SELECT title, content, created_at FROM articles WHERE id = ?1",
+        [article_id],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+    )?;
+
+    let md = html_to_markdown(&content);
+    Ok(format!("# {}\n\n> {}\n\n{}", title, created_at, md))
 }
 
 /// Import database from a zip backup file
