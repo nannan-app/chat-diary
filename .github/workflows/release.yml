@@ -20,7 +20,7 @@ jobs:
           # macOS - Intel
           - platform: macos-latest
             target: x86_64-apple-darwin
-          # Windows
+          # Windows - portable only
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
           # Linux
@@ -62,7 +62,9 @@ jobs:
       - name: Install frontend dependencies
         run: bun install
 
+      # Non-Windows: use tauri-action to build + upload installers
       - name: Build Tauri app
+        if: matrix.target != 'x86_64-pc-windows-msvc'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,7 +78,16 @@ jobs:
           prerelease: false
           args: --target ${{ matrix.target }}
 
-      # Windows portable: zip the exe and upload to the same release
+      # Windows: build with cargo, then zip the exe as portable
+      - name: Build frontend
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        run: bun run build
+
+      - name: Build Tauri (Windows)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        run: cargo build --release --target ${{ matrix.target }}
+        working-directory: src-tauri
+
       - name: Package Windows portable
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
@@ -87,6 +98,7 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: bash
         run: |
+          gh release create "${{ github.ref_name }}" --title "Murmur ${{ github.ref_name }}" --notes "See the assets below to download and install." --generate-notes 2>/dev/null || true
           gh release upload "${{ github.ref_name }}" "Murmur_${{ github.ref_name }}_windows-portable.zip" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
