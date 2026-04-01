@@ -91,6 +91,8 @@ const resources = {
       "toolbar.tag": "标签",
       "toolbar.article": "长文",
       // Context menu
+      "diary.deleteDay": "删除当天日记",
+      "diary.deleteDay.confirm": "确定要删除这一天的所有日记吗？此操作不可恢复。",
       "menu.quote": "引用",
       "menu.edit": "编辑",
       "menu.favorite": "收藏",
@@ -409,6 +411,8 @@ const resources = {
       "toolbar.aiError": "AI summary failed",
       "toolbar.tag": "Tags",
       "toolbar.article": "Article",
+      "diary.deleteDay": "Delete this day",
+      "diary.deleteDay.confirm": "Are you sure you want to delete all entries for this day? This cannot be undone.",
       "menu.quote": "Quote",
       "menu.edit": "Edit",
       "menu.favorite": "Favorite",

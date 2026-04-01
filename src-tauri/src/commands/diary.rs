@@ -103,12 +103,33 @@ pub fn delete_message(state: State<AppState>, message_id: i64) -> Result<(), Mur
     with_db(&state, |conn| diary_repo::delete_message(conn, message_id))
 }
 
-/// Delete entire diary day
+/// Delete entire diary day, including on-disk media files
 #[tauri::command]
 pub fn delete_diary_day(state: State<AppState>, diary_day_id: i64) -> Result<(), MurmurError> {
+    let space = state.space.lock().unwrap().clone();
+    let media_subdir = match space {
+        SpaceType::Private => "private",
+        SpaceType::Public => "public",
+    };
+    let media_dir = state.media_dir.join(media_subdir);
+
+    // Collect file hashes before deleting DB records
+    let hashes: Vec<String> = with_db(&state, |conn| {
+        diary_repo::collect_file_hashes(conn, diary_day_id)
+    })?;
+
+    // Delete DB records
     with_db(&state, |conn| {
         diary_repo::delete_diary_day(conn, diary_day_id)
-    })
+    })?;
+
+    // Remove on-disk files (best-effort, don't fail if already gone)
+    for hash in &hashes {
+        let path = media_dir.join(hash);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    Ok(())
 }
 
 /// Create an article (long-form markdown)

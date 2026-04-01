@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Trash2 } from "lucide-react";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -16,6 +17,8 @@ export default function ChatView() {
   const { t } = useTranslation();
   const messages = useDiaryStore((s) => s.messages);
   const selectedDate = useDiaryStore((s) => s.selectedDate);
+  const currentDay = useDiaryStore((s) => s.currentDay);
+  const deleteDiaryDay = useDiaryStore((s) => s.deleteDiaryDay);
   const loading = useDiaryStore((s) => s.loading);
   const secondaryPanelVisible = useUIStore((s) => s.secondaryPanelVisible);
   const toggleSecondaryPanel = useUIStore((s) => s.toggleSecondaryPanel);
@@ -82,7 +85,23 @@ export default function ChatView() {
         <span className="flex-1 text-center text-xs text-text-hint">
           {dayjs(selectedDate).format(t("diary.dateFormat"))}
         </span>
-        <div className="w-6" />
+        {currentDay && messages.length > 0 ? (
+          <button
+            onClick={async () => {
+              const yes = await ask(t("diary.deleteDay.confirm"), {
+                title: t("diary.deleteDay"),
+                kind: "warning",
+              });
+              if (yes) deleteDiaryDay();
+            }}
+            className="p-1 rounded-lg hover:bg-red-50 transition-colors text-text-hint hover:text-red-500"
+            title={t("diary.deleteDay")}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        ) : (
+          <div className="w-6" />
+        )}
       </div>
 
       {/* Messages area */}

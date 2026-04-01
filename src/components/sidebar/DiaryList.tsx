@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Calendar, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { useDiaryStore } from "../../stores/diaryStore";
 import SearchResults from "./SearchResults";
 import * as ipc from "../../lib/ipc";
@@ -23,6 +24,8 @@ export default function DiaryList() {
   const [filterTagId, setFilterTagId] = useState<number | null>(null);
   const [showTagFilter, setShowTagFilter] = useState(false);
   const [companionDays, setCompanionDays] = useState(0);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; dayId: number; date: string } | null>(null);
+  const ctxRef = useRef<HTMLDivElement>(null);
   const diaryDays = useDiaryStore((s) => s.diaryDays);
   const currentDay = useDiaryStore((s) => s.currentDay);
   const selectedDate = useDiaryStore((s) => s.selectedDate);
@@ -79,6 +82,46 @@ export default function DiaryList() {
   useEffect(() => {
     ipc.getTags().then(setAllTags).catch(() => {});
   }, [tagVersion]);
+
+  // Close context menu on click outside
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (ctxRef.current && !ctxRef.current.contains(e.target as Node)) {
+        setCtxMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [ctxMenu]);
+
+  const handleDeleteDay = async (dayId: number, date: string) => {
+    setCtxMenu(null);
+    const yes = await ask(t("diary.deleteDay.confirm"), {
+      title: t("diary.deleteDay"),
+      kind: "warning",
+    });
+    if (!yes) return;
+    try {
+      console.log("Deleting diary day:", dayId, date);
+      await ipc.deleteDiaryDay(dayId);
+      console.log("Delete succeeded");
+      // If we just deleted the currently viewed day, clear it
+      const { currentDay } = useDiaryStore.getState();
+      if (currentDay && currentDay.id === dayId) {
+        useDiaryStore.setState({ currentDay: null, messages: [] });
+      }
+      // Refresh the month the deleted day belongs to
+      const deleted = dayjs(date);
+      loadDiaryList(deleted.year(), deleted.month() + 1);
+      // Also refresh current view month if different
+      if (deleted.year() !== viewYear || deleted.month() + 1 !== viewMonth) {
+        loadDiaryList(viewYear, viewMonth);
+      }
+    } catch (e) {
+      console.log("Delete diary day failed:", e);
+    }
+  };
 
   // Filter diary days by selected tag
   const filteredDays = useMemo(() => {
@@ -307,6 +350,10 @@ export default function DiaryList() {
             <motion.button
               key={day.id}
               onClick={() => setSelectedDate(day.date)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setCtxMenu({ x: e.clientX, y: e.clientY, dayId: day.id, date: day.date });
+              }}
               whileTap={{ scale: 0.98 }}
               className={`w-full text-left px-3 py-2.5 rounded-lg mb-0.5 transition-colors
                 ${isSelected ? "bg-accent/10" : "hover:bg-warm-100"}`}
@@ -360,6 +407,30 @@ export default function DiaryList() {
       </div>
 
       )}
+
+      {/* Right-click context menu */}
+      <AnimatePresence>
+        {ctxMenu && (
+          <motion.div
+            ref={ctxRef}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.1 }}
+            className="fixed z-50 bg-white rounded-lg shadow-lg border border-border py-1 min-w-[120px]"
+            style={{ left: ctxMenu.x, top: ctxMenu.y }}
+          >
+            <button
+              onClick={() => handleDeleteDay(ctxMenu.dayId, ctxMenu.date)}
+              className="w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-50
+                         transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {t("diary.deleteDay")}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom: prev/next month + stats */}
       <div className="px-3 py-2 border-t border-border">

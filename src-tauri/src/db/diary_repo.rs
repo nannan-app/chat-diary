@@ -238,15 +238,65 @@ pub fn delete_message(conn: &Connection, message_id: i64) -> Result<(), MurmurEr
     Ok(())
 }
 
+/// Collect all on-disk file hashes (images + files) for a diary day
+pub fn collect_file_hashes(conn: &Connection, diary_day_id: i64) -> Result<Vec<String>, MurmurError> {
+    let mut hashes = Vec::new();
+    let mut stmt = conn.prepare(
+        "SELECT file_hash FROM images WHERE diary_day_id = ?1
+         UNION ALL
+         SELECT file_hash FROM files WHERE diary_day_id = ?1"
+    )?;
+    let rows = stmt.query_map([diary_day_id], |row| row.get::<_, String>(0))?;
+    for h in rows {
+        hashes.push(h?);
+    }
+    Ok(hashes)
+}
+
 /// Delete an entire diary day and all its messages
 pub fn delete_diary_day(conn: &Connection, diary_day_id: i64) -> Result<(), MurmurError> {
-    // Delete FTS entries for messages
-    conn.execute(
+    // Disable FK checks — multiple tables have cross-references without CASCADE
+    conn.execute_batch("PRAGMA foreign_keys=OFF;")?;
+
+    // Rebuild FTS indexes to avoid "disk image is malformed" errors from stale content sync
+    let _ = conn.execute_batch("INSERT INTO messages_fts(messages_fts) VALUES('rebuild');");
+    let _ = conn.execute_batch("INSERT INTO articles_fts(articles_fts) VALUES('rebuild');");
+
+    // Delete FTS entries (best-effort — don't block deletion if FTS is broken)
+    let _ = conn.execute(
         "DELETE FROM messages_fts WHERE rowid IN (SELECT id FROM messages WHERE diary_day_id = ?1)",
         [diary_day_id],
+    );
+    let _ = conn.execute(
+        "DELETE FROM articles_fts WHERE rowid IN (SELECT id FROM articles WHERE diary_day_id = ?1)",
+        [diary_day_id],
+    );
+
+    // Delete dependent rows explicitly
+    conn.execute(
+        "DELETE FROM message_tags WHERE message_id IN (SELECT id FROM messages WHERE diary_day_id = ?1)",
+        [diary_day_id],
     )?;
-    // CASCADE will handle messages, images, articles, diary_day_tags
+    conn.execute(
+        "UPDATE favorites SET message_id = NULL WHERE message_id IN (SELECT id FROM messages WHERE diary_day_id = ?1)",
+        [diary_day_id],
+    )?;
+    conn.execute(
+        "UPDATE favorites SET article_id = NULL WHERE article_id IN (SELECT id FROM articles WHERE diary_day_id = ?1)",
+        [diary_day_id],
+    )?;
+    conn.execute("DELETE FROM messages WHERE diary_day_id = ?1", [diary_day_id])?;
+    conn.execute("DELETE FROM files WHERE diary_day_id = ?1", [diary_day_id])?;
+    conn.execute("DELETE FROM images WHERE diary_day_id = ?1", [diary_day_id])?;
+    conn.execute("DELETE FROM articles WHERE diary_day_id = ?1", [diary_day_id])?;
+    conn.execute("DELETE FROM diary_day_tags WHERE diary_day_id = ?1", [diary_day_id])?;
     conn.execute("DELETE FROM diary_days WHERE id = ?1", [diary_day_id])?;
+
+    // Re-enable FK and rebuild FTS to stay in sync
+    conn.execute_batch("PRAGMA foreign_keys=ON;")?;
+    let _ = conn.execute_batch("INSERT INTO messages_fts(messages_fts) VALUES('rebuild');");
+    let _ = conn.execute_batch("INSERT INTO articles_fts(articles_fts) VALUES('rebuild');");
+
     Ok(())
 }
 

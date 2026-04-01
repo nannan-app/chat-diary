@@ -9,23 +9,42 @@ permissions:
   contents: write
 
 jobs:
+  # Create the release first so all build jobs can upload to it
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --title "Murmur ${{ github.ref_name }}" \
+            --notes "See the assets below to download and install." \
+            2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
         include:
-          # macOS - Apple Silicon
           - platform: macos-latest
             target: aarch64-apple-darwin
-          # macOS - Intel
+            bundles: dmg
+            label: macos-arm64
           - platform: macos-latest
             target: x86_64-apple-darwin
-          # Windows - portable only
+            bundles: dmg
+            label: macos-x64
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
-          # Linux
+            bundles: none
+            label: windows-x64
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            bundles: deb,appimage
+            label: linux-x64
 
     runs-on: ${{ matrix.platform }}
 
@@ -61,23 +80,39 @@ jobs:
       - name: Install frontend dependencies
         run: bun install
 
-      # Non-Windows: use tauri-action to build + upload installers
+      # ── macOS & Linux: build with tauri, upload manually ──
       - name: Build Tauri app
         if: matrix.target != 'x86_64-pc-windows-msvc'
-        uses: tauri-apps/tauri-action@v0
+        run: bun tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - name: Upload macOS dmg
+        if: contains(matrix.target, 'apple-darwin')
+        shell: bash
+        run: |
+          DMG=$(find src-tauri/target/${{ matrix.target }}/release/bundle -name '*.dmg' | head -1)
+          gh release upload "${{ github.ref_name }}" "$DMG#Murmur_${{ github.ref_name }}_${{ matrix.label }}.dmg" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "Murmur ${{ github.ref_name }}"
-          releaseBody: "See the assets below to download and install."
-          releaseDraft: false
-          prerelease: false
-          args: --target ${{ matrix.target }}
 
-      # Windows: build with cargo, then zip the exe as portable
+      - name: Upload Linux deb
+        if: matrix.label == 'linux-x64'
+        shell: bash
+        run: |
+          DEB=$(find src-tauri/target/${{ matrix.target }}/release/bundle -name '*.deb' | head -1)
+          gh release upload "${{ github.ref_name }}" "$DEB#Murmur_${{ github.ref_name }}_${{ matrix.label }}.deb" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux AppImage
+        if: matrix.label == 'linux-x64'
+        shell: bash
+        run: |
+          AI=$(find src-tauri/target/${{ matrix.target }}/release/bundle -name '*.AppImage' | head -1)
+          gh release upload "${{ github.ref_name }}" "$AI#Murmur_${{ github.ref_name }}_${{ matrix.label }}.AppImage" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Windows: cargo build + portable zip ──
       - name: Build frontend
         if: matrix.target == 'x86_64-pc-windows-msvc'
         run: bun run build
@@ -97,13 +132,12 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
-          Compress-Archive -Path "src-tauri/target/${{ matrix.target }}/release/Murmur.exe","MicrosoftEdgeWebview2Setup.exe" -DestinationPath "Murmur_${{ github.ref_name }}_windows-portable.zip"
+          Compress-Archive -Path "src-tauri/target/${{ matrix.target }}/release/Murmur.exe","MicrosoftEdgeWebview2Setup.exe" -DestinationPath "Murmur_${{ github.ref_name }}_windows-x64-portable.zip"
 
-      - name: Upload Windows portable to release
+      - name: Upload Windows portable
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: bash
         run: |
-          gh release create "${{ github.ref_name }}" --title "Murmur ${{ github.ref_name }}" --notes "See the assets below to download and install." --generate-notes 2>/dev/null || true
-          gh release upload "${{ github.ref_name }}" "Murmur_${{ github.ref_name }}_windows-portable.zip" --clobber
+          gh release upload "${{ github.ref_name }}" "Murmur_${{ github.ref_name }}_windows-x64-portable.zip" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

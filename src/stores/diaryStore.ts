@@ -18,6 +18,7 @@ interface DiaryState {
   sendTextMessage: (text: string, quoteRefId?: number) => Promise<void>;
   editMessage: (messageId: number, content: string) => Promise<void>;
   deleteMessage: (messageId: number) => Promise<void>;
+  deleteDiaryDay: () => Promise<void>;
   sendMoodMessage: (mood: string) => Promise<void>;
   uploadImage: (imageBytes: Uint8Array, compress: boolean) => Promise<void>;
   uploadFile: (fileBytes: Uint8Array, fileName: string, mimeType: string) => Promise<void>;
@@ -99,6 +100,16 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     set((state) => ({
       messages: state.messages.filter((m) => m.id !== messageId),
     }));
+  },
+
+  deleteDiaryDay: async () => {
+    const { currentDay, selectedDate } = get();
+    if (!currentDay) return;
+    await ipc.deleteDiaryDay(currentDay.id);
+    set({ currentDay: null, messages: [] });
+    // Refresh diary list for the sidebar
+    const d = dayjs(selectedDate);
+    get().loadDiaryList(d.year(), d.month() + 1);
   },
 
   sendMoodMessage: async (mood: string) => {
