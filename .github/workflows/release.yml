@@ -87,11 +87,17 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
         working-directory: src-tauri
 
+      - name: Download WebView2 Bootstrapper
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile "MicrosoftEdgeWebview2Setup.exe"
+
       - name: Package Windows portable
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
-          Compress-Archive -Path "src-tauri/target/${{ matrix.target }}/release/Murmur.exe" -DestinationPath "Murmur_${{ github.ref_name }}_windows-portable.zip"
+          Compress-Archive -Path "src-tauri/target/${{ matrix.target }}/release/Murmur.exe","MicrosoftEdgeWebview2Setup.exe" -DestinationPath "Murmur_${{ github.ref_name }}_windows-portable.zip"
 
       - name: Upload Windows portable to release
         if: matrix.target == 'x86_64-pc-windows-msvc'
