@@ -7,6 +7,7 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { useDiaryStore } from "../../stores/diaryStore";
 import { useUIStore } from "../../stores/uiStore";
 import { getMoods } from "../../lib/constants";
+import { MOOD_ICONS } from "../../assets/moods";
 import TagPanel from "./TagPanel";
 import MarkdownEditor from "../editor/MarkdownEditor";
 import * as ipc from "../../lib/ipc";
@@ -364,7 +365,10 @@ export default function MessageInput() {
                   onClick={() => handleMood(m.emoji)}
                   className="flex flex-col items-center gap-0.5 p-1.5 rounded-lg hover:bg-warm-100 transition-colors"
                 >
-                  <span className="text-xl">{m.emoji}</span>
+                  {MOOD_ICONS[m.emoji]
+                    ? <img src={MOOD_ICONS[m.emoji]} alt={m.label} className="w-8 h-8" />
+                    : <span className="text-xl">{m.emoji}</span>
+                  }
                   <span className="text-xs text-text-hint">{m.label}</span>
                 </motion.button>
               ))}

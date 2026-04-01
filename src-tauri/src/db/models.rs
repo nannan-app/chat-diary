@@ -44,6 +44,8 @@ pub struct FileRecord {
     pub file_size: i64,
     pub mime_type: String,
     pub created_at: String,
+    #[serde(skip_deserializing, default)]
+    pub date: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

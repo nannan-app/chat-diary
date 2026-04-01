@@ -86,6 +86,17 @@ export interface SetupResponse {
   recovery_code: string;
 }
 
-export type NavSection = "diary" | "gallery" | "library" | "favorites" | "achievements";
+export interface FileItem {
+  id: number;
+  diary_day_id: number;
+  file_hash: string;
+  original_name: string;
+  file_size: number;
+  mime_type: string;
+  created_at: string;
+  date: string | null;
+}
+
+export type NavSection = "diary" | "gallery" | "library" | "favorites" | "achievements" | "files";
 
 export type SpaceType = "private" | "public";

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { CalendarDays, Images, BookOpen, Star, Medal, Dices, Settings, Lock, LockOpen } from "lucide-react";
+import { CalendarDays, Images, BookOpen, Star, Medal, Dices, Settings, Lock, LockOpen, FolderOpen } from "lucide-react";
 import { useUIStore } from "../../stores/uiStore";
 import { useAuthStore } from "../../stores/authStore";
 import { useDiaryStore } from "../../stores/diaryStore";
@@ -12,8 +12,32 @@ const navItemDefs: { id: NavSection; icon: React.FC<any>; labelKey: string }[] =
   { id: "gallery", icon: Images, labelKey: "nav.gallery" },
   { id: "library", icon: BookOpen, labelKey: "nav.library" },
   { id: "favorites", icon: Star, labelKey: "nav.favorites" },
+  { id: "files", icon: FolderOpen, labelKey: "nav.files" },
   { id: "achievements", icon: Medal, labelKey: "nav.achievements" },
 ];
+
+function NavTooltipButton({
+  label,
+  className,
+  onClick,
+  children,
+}: {
+  label: string;
+  className?: string;
+  onClick?: React.MouseEventHandler;
+  children: React.ReactNode;
+}) {
+  return (
+    <button onClick={onClick} className={`relative group ${className || ""}`}>
+      {children}
+      <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2
+                        px-2 py-1 rounded-md bg-text-primary text-white text-xs whitespace-nowrap
+                        opacity-0 group-hover:opacity-100 transition-opacity z-50">
+        {label}
+      </span>
+    </button>
+  );
+}
 
 export default function IconNavBar() {
   const { t } = useTranslation();
@@ -27,12 +51,12 @@ export default function IconNavBar() {
       {/* Nav items */}
       <div className="flex flex-col gap-1 flex-1">
         {navItems.map((item) => (
-          <button
+          <NavTooltipButton
             key={item.id}
+            label={item.label}
             onClick={() => setActiveNav(item.id)}
-            className="relative w-10 h-10 rounded-xl flex items-center justify-center
-                       text-lg hover:bg-warm-200/50 transition-colors group"
-            title={item.label}
+            className="w-10 h-10 rounded-xl flex items-center justify-center
+                       text-lg hover:bg-warm-200/50 transition-colors"
           >
             {activeNav === item.id && (
               <motion.div
@@ -42,14 +66,14 @@ export default function IconNavBar() {
               />
             )}
             <item.icon className="relative z-10 w-5 h-5" />
-          </button>
+          </NavTooltipButton>
         ))}
 
         {/* Random memory dice */}
-        <button
+        <NavTooltipButton
+          label={t("nav.random")}
           className="w-10 h-10 rounded-xl flex items-center justify-center
                      text-lg hover:bg-warm-200/50 transition-colors mt-2"
-          title={t("nav.random")}
           onClick={async () => {
             try {
               const day = await ipc.getRandomDiaryDay();
@@ -65,30 +89,30 @@ export default function IconNavBar() {
           }}
         >
           <Dices className="w-5 h-5" />
-        </button>
+        </NavTooltipButton>
       </div>
 
       {/* Space indicator — click to lock */}
-      <button
+      <NavTooltipButton
+        label={spaceType === "private" ? t("space.private") : t("space.public")}
         onClick={logout}
         className="w-10 h-10 rounded-xl flex items-center justify-center
                    hover:bg-warm-200/50 transition-colors mb-1"
-        title={spaceType === "private" ? t("space.private") : t("space.public")}
       >
         {spaceType === "private"
           ? <Lock className="w-4 h-4 text-accent" />
           : <LockOpen className="w-4 h-4 text-orange-400" />}
-      </button>
+      </NavTooltipButton>
 
       {/* Settings at bottom */}
-      <button
+      <NavTooltipButton
+        label={t("nav.settings")}
         onClick={() => useUIStore.getState().setShowSettings(true)}
         className="w-10 h-10 rounded-xl flex items-center justify-center
                    text-lg hover:bg-warm-200/50 transition-colors"
-        title={t("nav.settings")}
       >
         <Settings className="w-5 h-5" />
-      </button>
+      </NavTooltipButton>
     </div>
   );
 }

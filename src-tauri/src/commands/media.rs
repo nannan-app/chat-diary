@@ -202,6 +202,41 @@ pub fn upload_file(
     Ok(message)
 }
 
+/// List all files for the files panel
+#[tauri::command]
+pub fn list_all_files(state: State<AppState>) -> Result<Vec<crate::db::models::FileRecord>, MurmurError> {
+    let space = state.space.lock().unwrap().clone();
+    let db_lock = match space {
+        SpaceType::Private => state.private_db.lock().unwrap(),
+        SpaceType::Public => state.public_db.lock().unwrap(),
+    };
+    let conn = db_lock.as_ref().ok_or(MurmurError::NotAuthenticated)?;
+
+    let mut stmt = conn.prepare(
+        "SELECT f.id, f.diary_day_id, f.file_hash, f.original_name, f.file_size, f.mime_type, f.created_at, d.date
+         FROM files f
+         JOIN diary_days d ON d.id = f.diary_day_id
+         ORDER BY f.created_at DESC"
+    )?;
+
+    let files = stmt
+        .query_map([], |row| {
+            Ok(crate::db::models::FileRecord {
+                id: row.get(0)?,
+                diary_day_id: row.get(1)?,
+                file_hash: row.get(2)?,
+                original_name: row.get(3)?,
+                file_size: row.get(4)?,
+                mime_type: row.get(5)?,
+                created_at: row.get(6)?,
+                date: row.get(7)?,
+            })
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(files)
+}
+
 /// Get file data (decrypted if private)
 #[tauri::command]
 pub fn get_file_data(state: State<AppState>, file_id: i64) -> Result<Vec<u8>, MurmurError> {

@@ -129,6 +129,7 @@ pub fn run() {
             commands::media::list_all_images_with_thumbnails,
             commands::media::upload_file,
             commands::media::get_file_data,
+            commands::media::list_all_files,
             // Settings
             commands::settings::get_setting,
             commands::settings::set_setting,

@@ -13,6 +13,7 @@ import FavoritesView from "../favorites/FavoritesView";
 import GalleryView from "../gallery/GalleryView";
 import BadgeWall from "../achievements/BadgeWall";
 import LibraryView from "../library/LibraryView";
+import FilesView from "../files/FilesView";
 import Celebration from "../shared/Celebration";
 import QuickCapture from "../shared/QuickCapture";
 import ArticleViewer from "../editor/ArticleViewer";
@@ -142,6 +143,7 @@ export default function AppShell() {
         {activeNav === "gallery" && <GalleryView />}
         {activeNav === "library" && <LibraryView />}
         {activeNav === "favorites" && <FavoritesView />}
+        {activeNav === "files" && <FilesView />}
         {activeNav === "achievements" && <BadgeWall />}
       </div>
 

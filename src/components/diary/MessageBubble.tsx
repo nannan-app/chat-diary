@@ -7,6 +7,7 @@ import type { Message } from "../../lib/types";
 import { useUIStore } from "../../stores/uiStore";
 import { SOURCE_ICONS } from "../../lib/constants";
 import LinkPreview, { extractUrls } from "./LinkPreview";
+import { MOOD_ICONS } from "../../assets/moods";
 
 interface Props {
   message: Message;
@@ -50,7 +51,10 @@ export default function MessageBubble({ message }: Props) {
         data-message-id={message.id}
       >
         <div className="bg-warm-100 rounded-2xl px-4 py-2 text-center">
-          <span className="text-2xl">{message.mood}</span>
+          {message.mood && MOOD_ICONS[message.mood]
+            ? <img src={MOOD_ICONS[message.mood]} alt={message.mood} className="w-10 h-10 mx-auto" />
+            : <span className="text-2xl">{message.mood}</span>
+          }
           <p className="text-xs text-text-hint mt-0.5">{time}</p>
         </div>
       </motion.div>

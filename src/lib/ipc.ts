@@ -4,6 +4,7 @@ import type {
   Article,
   DiaryDay,
   Favorite,
+  FileItem,
   LoginResult,
   Message,
   SearchResult,
@@ -93,6 +94,8 @@ export const uploadFile = (
   invoke<Message>("upload_file", { diaryDayId, fileBytes, fileName, mimeType });
 export const getFileData = (fileId: number) =>
   invoke<number[]>("get_file_data", { fileId });
+export const listAllFiles = () =>
+  invoke<FileItem[]>("list_all_files");
 
 // Tags
 export const getTags = () => invoke<Tag[]>("get_tags");

@@ -27,6 +27,7 @@ pub fn insert_file(
         file_size,
         mime_type: mime_type.to_string(),
         created_at: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        date: None,
     })
 }
 
@@ -45,6 +46,7 @@ pub fn get_file(conn: &Connection, file_id: i64) -> Result<FileRecord, MurmurErr
                 file_size: row.get(4)?,
                 mime_type: row.get(5)?,
                 created_at: row.get(6)?,
+                date: None,
             })
         },
     )?;
