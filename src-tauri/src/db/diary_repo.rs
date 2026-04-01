@@ -228,13 +228,35 @@ pub fn edit_message(conn: &Connection, message_id: i64, content: &str) -> Result
     Ok(())
 }
 
-/// Delete a message
+/// Delete a message (and associated article/file/image if applicable)
 pub fn delete_message(conn: &Connection, message_id: i64) -> Result<(), MurmurError> {
-    conn.execute(
-        "DELETE FROM messages_fts WHERE rowid = ?1",
+    // Check if this message has an associated article or image
+    let (kind, article_id, image_id, file_id): (String, Option<i64>, Option<i64>, Option<i64>) = conn.query_row(
+        "SELECT kind, article_id, image_id, file_id FROM messages WHERE id = ?1",
         [message_id],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
     )?;
+
+    // Delete FTS entry for the message
+    let _ = conn.execute("DELETE FROM messages_fts WHERE rowid = ?1", [message_id]);
+
+    // Delete the message itself
     conn.execute("DELETE FROM messages WHERE id = ?1", [message_id])?;
+
+    // Clean up associated records
+    if kind == "article" {
+        if let Some(aid) = article_id {
+            let _ = conn.execute("DELETE FROM articles_fts WHERE rowid = ?1", [aid]);
+            conn.execute("DELETE FROM articles WHERE id = ?1", [aid])?;
+        }
+    }
+    if let Some(iid) = image_id {
+        conn.execute("DELETE FROM images WHERE id = ?1", [iid])?;
+    }
+    if let Some(fid) = file_id {
+        conn.execute("DELETE FROM files WHERE id = ?1", [fid])?;
+    }
+
     Ok(())
 }
 

@@ -45,6 +45,7 @@ export interface Article {
   word_count: number;
   created_at: string;
   updated_at: string;
+  date: string | null;
 }
 
 export interface Favorite {

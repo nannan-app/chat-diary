@@ -69,6 +69,8 @@ pub struct Article {
     pub word_count: i64,
     pub created_at: String,
     pub updated_at: String,
+    #[serde(skip_deserializing, default)]
+    pub date: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

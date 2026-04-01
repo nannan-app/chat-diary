@@ -174,8 +174,10 @@ pub fn create_article(
 pub fn get_all_articles(state: State<AppState>) -> Result<Vec<crate::db::models::Article>, MurmurError> {
     with_db(&state, |conn| {
         let mut stmt = conn.prepare(
-            "SELECT a.id, a.diary_day_id, a.title, a.content, a.word_count, a.created_at, a.updated_at
-             FROM articles a ORDER BY a.created_at DESC"
+            "SELECT a.id, a.diary_day_id, a.title, a.content, a.word_count, a.created_at, a.updated_at, d.date
+             FROM articles a
+             JOIN diary_days d ON d.id = a.diary_day_id
+             ORDER BY a.created_at DESC"
         )?;
         let articles = stmt
             .query_map([], |row| {
@@ -187,6 +189,7 @@ pub fn get_all_articles(state: State<AppState>) -> Result<Vec<crate::db::models:
                     word_count: row.get(4)?,
                     created_at: row.get(5)?,
                     updated_at: row.get(6)?,
+                    date: row.get(7)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -199,7 +202,8 @@ pub fn get_all_articles(state: State<AppState>) -> Result<Vec<crate::db::models:
 pub fn get_article(state: State<AppState>, article_id: i64) -> Result<crate::db::models::Article, MurmurError> {
     with_db(&state, |conn| {
         let article = conn.query_row(
-            "SELECT id, diary_day_id, title, content, word_count, created_at, updated_at FROM articles WHERE id = ?1",
+            "SELECT a.id, a.diary_day_id, a.title, a.content, a.word_count, a.created_at, a.updated_at, d.date
+             FROM articles a JOIN diary_days d ON d.id = a.diary_day_id WHERE a.id = ?1",
             [article_id],
             |row| {
                 Ok(crate::db::models::Article {
@@ -210,6 +214,7 @@ pub fn get_article(state: State<AppState>, article_id: i64) -> Result<crate::db:
                     word_count: row.get(4)?,
                     created_at: row.get(5)?,
                     updated_at: row.get(6)?,
+                    date: row.get(7)?,
                 })
             },
         )?;
