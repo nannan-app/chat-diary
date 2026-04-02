@@ -162,6 +162,8 @@ export const fetchUrlMeta = (url: string) =>
 // Shortcut
 export const updateQuickCaptureShortcut = (shortcut: string) =>
   invoke<void>("update_quick_capture_shortcut", { shortcut });
+export const updateToggleWindowShortcut = (shortcut: string) =>
+  invoke<void>("update_toggle_window_shortcut", { shortcut });
 
 // Diary - extended
 export const getRandomDiaryDay = () =>

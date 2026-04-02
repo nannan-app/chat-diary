@@ -39,6 +39,9 @@ export default function AppShell() {
       if (map.quick_capture_shortcut) {
         ipc.updateQuickCaptureShortcut(map.quick_capture_shortcut);
       }
+      if (map.toggle_window_shortcut) {
+        ipc.updateToggleWindowShortcut(map.toggle_window_shortcut);
+      }
     });
   }, [loadToday]);
 

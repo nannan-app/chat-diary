@@ -11,14 +11,19 @@ use tauri::webview::WebviewWindowBuilder;
 
 use state::AppState;
 
-fn register_quick_capture_shortcut(app_handle: &tauri::AppHandle, shortcut: &str) {
+fn register_global_shortcuts(
+    app_handle: &tauri::AppHandle,
+    quick_capture_shortcut: &str,
+    toggle_window_shortcut: &str,
+) {
     use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
     // Unregister all existing shortcuts first
     let _ = app_handle.global_shortcut().unregister_all();
 
+    // Register quick capture shortcut
     let handle = app_handle.clone();
-    if let Err(e) = app_handle.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, event| {
+    if let Err(e) = app_handle.global_shortcut().on_shortcut(quick_capture_shortcut, move |_app, _shortcut, event| {
         if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
             if let Some(w) = handle.get_webview_window("quick-capture") {
                 w.show().ok();
@@ -46,13 +51,52 @@ fn register_quick_capture_shortcut(app_handle: &tauri::AppHandle, shortcut: &str
             }
         }
     }) {
-        eprintln!("[shortcut] Failed to register '{}': {}", shortcut, e);
+        eprintln!("[shortcut] Failed to register quick capture '{}': {}", quick_capture_shortcut, e);
     }
+
+    // Register toggle main window shortcut
+    let handle = app_handle.clone();
+    if let Err(e) = app_handle.global_shortcut().on_shortcut(toggle_window_shortcut, move |_app, _shortcut, event| {
+        if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+            if let Some(w) = handle.get_webview_window("main") {
+                if w.is_visible().unwrap_or(false) {
+                    w.hide().ok();
+                } else {
+                    w.show().ok();
+                    w.set_focus().ok();
+                }
+            }
+        }
+    }) {
+        eprintln!("[shortcut] Failed to register toggle window '{}': {}", toggle_window_shortcut, e);
+    }
+}
+
+fn get_setting_from_state(state: &tauri::State<AppState>, key: &str) -> Option<String> {
+    let space = state.space.lock().unwrap().clone();
+    let db_guard = match space {
+        state::SpaceType::Private => state.private_db.lock().unwrap(),
+        state::SpaceType::Public => state.public_db.lock().unwrap(),
+    };
+    let conn = db_guard.as_ref()?;
+    conn.query_row("SELECT value FROM settings WHERE key = ?1", [key], |row| row.get(0)).ok()
 }
 
 #[tauri::command]
 fn update_quick_capture_shortcut(app_handle: tauri::AppHandle, shortcut: String) -> Result<(), error::MurmurError> {
-    register_quick_capture_shortcut(&app_handle, &shortcut);
+    let state = app_handle.state::<AppState>();
+    let toggle_shortcut = get_setting_from_state(&state, "toggle_window_shortcut")
+        .unwrap_or_else(|| "CmdOrCtrl+Shift+O".to_string());
+    register_global_shortcuts(&app_handle, &shortcut, &toggle_shortcut);
+    Ok(())
+}
+
+#[tauri::command]
+fn update_toggle_window_shortcut(app_handle: tauri::AppHandle, shortcut: String) -> Result<(), error::MurmurError> {
+    let state = app_handle.state::<AppState>();
+    let capture_shortcut = get_setting_from_state(&state, "quick_capture_shortcut")
+        .unwrap_or_else(|| "CmdOrCtrl+Shift+M".to_string());
+    register_global_shortcuts(&app_handle, &capture_shortcut, &shortcut);
     Ok(())
 }
 
@@ -86,8 +130,8 @@ pub fn run() {
             let app_state = AppState::new(data_dir);
             app.manage(app_state);
 
-            // Register default global shortcut for quick capture
-            register_quick_capture_shortcut(app.handle(), "CmdOrCtrl+Shift+M");
+            // Register global shortcuts with defaults (user settings applied via Settings page)
+            register_global_shortcuts(app.handle(), "CmdOrCtrl+Shift+M", "CmdOrCtrl+Shift+O");
 
             Ok(())
         })
@@ -166,6 +210,7 @@ pub fn run() {
             commands::url_meta::fetch_url_meta,
             // Shortcut
             update_quick_capture_shortcut,
+            update_toggle_window_shortcut,
         ])
         .on_window_event(|window, event| {
             // macOS: hide window on close instead of quitting

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut, Send } from "lucide-react";
+import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut, Send, Copy, Download, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import * as ipc from "../../lib/ipc";
 import { useAuthStore } from "../../stores/authStore";
@@ -19,6 +19,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const [confirmPw, setConfirmPw] = useState("");
   const [hintText, setHintText] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
+  const [recoveryCopied, setRecoveryCopied] = useState(false);
   const [accountError, setAccountError] = useState("");
   const [accountSuccess, setAccountSuccess] = useState("");
   const [wrongPwAction, setWrongPwAction] = useState("public");
@@ -164,9 +165,43 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                 </button>
               </SettingItem>
               {showRecoveryCode && (
-                <div className="pl-2">
+                <div className="pl-2 space-y-2">
+                  <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg px-3 py-2">
+                    {t("settings.recoveryNewGenerated")}
+                  </div>
                   <div className="bg-warm-100 p-2 rounded-lg font-mono text-sm text-center select-all">{recoveryCode}</div>
-                  <p className="text-xs text-text-hint mt-1">{t("settings.recoverySaveNote")}</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(recoveryCode);
+                        setRecoveryCopied(true);
+                        setTimeout(() => setRecoveryCopied(false), 2000);
+                      }}
+                      className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover px-2 py-1 rounded-lg border border-border hover:bg-warm-100 transition-colors"
+                    >
+                      {recoveryCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {recoveryCopied ? t("settings.copied") : t("settings.copy")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const blob = new Blob(
+                          [t("auth.setup.recoveryFileContent", { code: recoveryCode })],
+                          { type: "text/plain" }
+                        );
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "murmur-recovery-code.txt";
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover px-2 py-1 rounded-lg border border-border hover:bg-warm-100 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {t("settings.download")}
+                    </button>
+                  </div>
+                  <p className="text-xs text-text-hint">{t("settings.recoverySaveNote")}</p>
                 </div>
               )}
 
@@ -398,6 +433,32 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                       const shortcut = settings.quick_capture_shortcut || "CmdOrCtrl+Shift+M";
                       try {
                         await ipc.updateQuickCaptureShortcut(shortcut);
+                        setAccountSuccess(t("settings.shortcutApplied"));
+                        setTimeout(() => setAccountSuccess(""), 2000);
+                      } catch (e: any) {
+                        setAccountError(String(e));
+                        setTimeout(() => setAccountError(""), 4000);
+                      }
+                    }}
+                    className="text-sm bg-accent text-white px-3 py-1 rounded-lg hover:bg-accent-hover"
+                  >
+                    {t("settings.apply")}
+                  </button>
+                </div>
+              </SettingItem>
+              <SettingItem label={t("settings.toggleWindowShortcut")}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={settings.toggle_window_shortcut || "CmdOrCtrl+Shift+O"}
+                    onChange={(e) => updateSetting("toggle_window_shortcut", e.target.value)}
+                    className="text-sm border border-border rounded-lg px-2 py-1 w-48 font-mono"
+                  />
+                  <button
+                    onClick={async () => {
+                      const shortcut = settings.toggle_window_shortcut || "CmdOrCtrl+Shift+O";
+                      try {
+                        await ipc.updateToggleWindowShortcut(shortcut);
                         setAccountSuccess(t("settings.shortcutApplied"));
                         setTimeout(() => setAccountSuccess(""), 2000);
                       } catch (e: any) {
