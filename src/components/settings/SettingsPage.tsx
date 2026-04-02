@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut, Send, Copy, Download, Check } from "lucide-react";
 import { motion } from "framer-motion";
+import { getVersion } from "@tauri-apps/api/app";
 import * as ipc from "../../lib/ipc";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -28,9 +29,11 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const [tgUsername, setTgUsername] = useState<string | null>(null);
   const [tgError, setTgError] = useState("");
   const [tgLoading, setTgLoading] = useState(false);
+  const [appVersion, setAppVersion] = useState("");
   const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
+    getVersion().then(setAppVersion);
     ipc.getAllSettings().then((pairs) => {
       const map: Record<string, string> = {};
       for (const [k, v] of pairs) map[k] = v;
@@ -595,7 +598,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
           {activeSection === "about" && (
             <div className="space-y-4">
               <SettingItem label={t("settings.version")}>
-                <span className="text-sm text-text-secondary">0.1.0</span>
+                <span className="text-sm text-text-secondary">v{appVersion}</span>
               </SettingItem>
               <SettingItem label={t("settings.checkUpdate")}>
                 <button className="text-sm text-accent hover:text-accent-hover">
