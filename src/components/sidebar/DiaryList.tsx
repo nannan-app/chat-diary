@@ -28,7 +28,6 @@ export default function DiaryList() {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; dayId: number; date: string } | null>(null);
   const ctxRef = useRef<HTMLDivElement>(null);
   const diaryDays = useDiaryStore((s) => s.diaryDays);
-  const currentDay = useDiaryStore((s) => s.currentDay);
   const selectedDate = useDiaryStore((s) => s.selectedDate);
   const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
   const loadDiaryList = useDiaryStore((s) => s.loadDiaryList);
@@ -132,21 +131,23 @@ export default function DiaryList() {
     );
   }, [diaryDays, dayTags, filterTagId]);
 
+  const todayDay = useDiaryStore((s) => s.todayDay);
+
   const visibleDays = useMemo(() => {
     const today = dayjs();
     const isViewingCurrentMonth =
       viewYear === today.year() && viewMonth === today.month() + 1;
 
-    if (!isViewingCurrentMonth || !currentDay) {
+    if (!isViewingCurrentMonth || !todayDay) {
       return filteredDays;
     }
 
-    if (filteredDays.some((day) => day.date === currentDay.date)) {
+    if (filteredDays.some((day) => day.date === todayDay.date)) {
       return filteredDays;
     }
 
-    return [currentDay, ...filteredDays].sort((a, b) => b.date.localeCompare(a.date));
-  }, [filteredDays, currentDay, viewYear, viewMonth]);
+    return [todayDay, ...filteredDays].sort((a, b) => b.date.localeCompare(a.date));
+  }, [filteredDays, todayDay, viewYear, viewMonth]);
 
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);

@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 interface DiaryState {
   selectedDate: string;
   currentDay: DiaryDay | null;
+  todayDay: DiaryDay | null;
   messages: Message[];
   diaryDays: DiaryDay[];
   loading: boolean;
@@ -28,6 +29,7 @@ interface DiaryState {
 export const useDiaryStore = create<DiaryState>((set, get) => ({
   selectedDate: dayjs().format("YYYY-MM-DD"),
   currentDay: null,
+  todayDay: null,
   messages: [],
   diaryDays: [],
   loading: false,
@@ -44,7 +46,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     try {
       const day = await ipc.getOrCreateToday();
       const messages = await ipc.getMessages(day.id);
-      set({ currentDay: day, messages, loading: false });
+      set({ currentDay: day, todayDay: day, messages, loading: false });
       // Also load the diary list for current month
       get().loadDiaryList(dayjs().year(), dayjs().month() + 1);
     } catch (e) {

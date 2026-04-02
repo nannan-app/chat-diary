@@ -11,7 +11,7 @@ import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
 import ImageDropZone from "../shared/ImageDropZone";
 import SeasonalParticles from "../shared/SeasonalParticles";
-import SunlitEffect from "../shared/SunlitEffect";
+
 import { getDailyPrompts } from "../../lib/constants";
 import chatEmptyImg from "../../assets/illustrations/empty/chat_empty.png";
 import * as ipc from "../../lib/ipc";
@@ -82,7 +82,6 @@ export default function ChatView() {
   return (
     <ImageDropZone>
     <div className={`h-full flex flex-col ${ambientClass} relative`}>
-      <SunlitEffect />
       <SeasonalParticles />
       {/* Date header */}
       <div className="relative z-[2] px-4 py-2 flex items-center border-b border-border/50">
