@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import * as ipc from "../../lib/ipc";
 
 interface UrlMeta {
@@ -35,7 +36,7 @@ export default function LinkPreview({ url }: { url: string }) {
   if (!loaded || !meta || (!meta.title && !meta.description)) return null;
 
   const handleClick = () => {
-    window.open(url, "_blank");
+    openUrl(url);
   };
 
   return (
@@ -72,4 +73,32 @@ const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
 
 export function extractUrls(text: string): string[] {
   return [...text.matchAll(URL_REGEX)].map((m) => m[0]);
+}
+
+/** Render text with clickable URL links that open in system browser */
+export function renderTextWithLinks(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  for (const match of text.matchAll(URL_REGEX)) {
+    const url = match[0];
+    const start = match.index!;
+    if (start > lastIndex) {
+      parts.push(text.slice(lastIndex, start));
+    }
+    parts.push(
+      <a
+        key={start}
+        href="#"
+        onClick={(e) => { e.preventDefault(); openUrl(url); }}
+        className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
+      >
+        {url}
+      </a>
+    );
+    lastIndex = start + url.length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts;
 }

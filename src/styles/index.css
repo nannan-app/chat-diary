@@ -195,6 +195,107 @@ body {
   height: 0;
 }
 
+/* ── Sunlit dappled-light effect ── */
+/* Adapted from https://github.com/jackyzha0/sunlit */
+
+.sunlit-root {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.sunlit-glow,
+.sunlit-glow-bounce {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+
+.sunlit-perspective {
+  position: absolute;
+  top: -30vh;
+  right: 0;
+  width: 80vw;
+  height: 130vh;
+  background-blend-mode: darken;
+  transform-origin: top right;
+  transform-style: preserve-3d;
+  transform: matrix3d(
+    0.75, -0.0625, 0, 0.0008,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+  );
+}
+
+.sunlit-leaves {
+  position: absolute;
+  background-size: cover;
+  background-repeat: no-repeat;
+  bottom: 0%;
+  right: 0%;
+  width: 35%;
+  height: 60%;
+}
+
+.sunlit-blinds {
+  position: relative;
+  width: 100%;
+}
+
+.sunlit-shutters {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  gap: 60px;
+}
+
+.sunlit-shutter {
+  width: 100%;
+  height: 40px;
+  background-color: #1a1917;
+}
+
+.sunlit-vertical {
+  top: 0;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.sunlit-bar {
+  width: 5px;
+  height: 100%;
+  background-color: #1a1917;
+}
+
+
+
+.sunlit-progressive-blur {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  inset: 0;
+}
+
+.sunlit-progressive-blur > div {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  inset: 0;
+  backdrop-filter: blur(var(--sunlit-blur));
+  mask-image: linear-gradient(252deg, transparent, transparent var(--sunlit-stop1), black var(--sunlit-stop2), black);
+}
+
+.sunlit-progressive-blur > div:nth-child(1) { --sunlit-blur: 6px;  --sunlit-stop1: 0%;  --sunlit-stop2: 0%;  }
+.sunlit-progressive-blur > div:nth-child(2) { --sunlit-blur: 12px; --sunlit-stop1: 40%; --sunlit-stop2: 80%; }
+.sunlit-progressive-blur > div:nth-child(3) { --sunlit-blur: 48px; --sunlit-stop1: 40%; --sunlit-stop2: 70%; }
+.sunlit-progressive-blur > div:nth-child(4) { --sunlit-blur: 96px; --sunlit-stop1: 70%; --sunlit-stop2: 80%; }
+
 /* Input breathing animation */
 @keyframes input-breathe {
   0%,

@@ -11,6 +11,7 @@ import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
 import ImageDropZone from "../shared/ImageDropZone";
 import SeasonalParticles from "../shared/SeasonalParticles";
+import SunlitEffect from "../shared/SunlitEffect";
 import { getDailyPrompts } from "../../lib/constants";
 import chatEmptyImg from "../../assets/illustrations/empty/chat_empty.png";
 import * as ipc from "../../lib/ipc";
@@ -81,9 +82,10 @@ export default function ChatView() {
   return (
     <ImageDropZone>
     <div className={`h-full flex flex-col ${ambientClass} relative`}>
+      <SunlitEffect />
       <SeasonalParticles />
       {/* Date header */}
-      <div className="px-4 py-2 flex items-center border-b border-border/50">
+      <div className="relative z-[2] px-4 py-2 flex items-center border-b border-border/50">
         <button
           onClick={toggleSecondaryPanel}
           className="p-1 rounded-lg hover:bg-warm-100 transition-colors text-text-hint"
@@ -124,7 +126,7 @@ export default function ChatView() {
       </div>
 
       {/* Messages area */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto py-3">
+      <div ref={scrollContainerRef} className="relative z-[2] flex-1 overflow-y-auto py-3">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-text-hint text-sm">{t("app.loading")}</span>
@@ -148,7 +150,9 @@ export default function ChatView() {
       </div>
 
       {/* Input */}
-      <MessageInput />
+      <div className="relative z-[2]">
+        <MessageInput />
+      </div>
     </div>
     </ImageDropZone>
   );

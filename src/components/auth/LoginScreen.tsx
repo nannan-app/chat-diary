@@ -5,6 +5,7 @@ import { useAuthStore } from "../../stores/authStore";
 import { getPasswordHint, resetPasswordWithRecovery } from "../../lib/ipc";
 import { getGreetings } from "../../lib/constants";
 import loginHero from "../../assets/illustrations/login_hero.png";
+import SunlitEffect from "../shared/SunlitEffect";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -37,12 +38,13 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-b from-warm-50 to-warm-100">
+    <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-b from-warm-50 to-warm-100 relative overflow-hidden">
+      <SunlitEffect />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="flex flex-col items-center gap-6"
+        className="relative z-[2] flex flex-col items-center gap-6"
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}

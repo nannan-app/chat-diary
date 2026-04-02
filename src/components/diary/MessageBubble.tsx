@@ -6,7 +6,7 @@ import { FileText, ChevronDown, ChevronRight, Brain, Bot, File, FileAudio, FileV
 import type { Message } from "../../lib/types";
 import { useUIStore } from "../../stores/uiStore";
 import { SOURCE_ICONS } from "../../lib/constants";
-import LinkPreview, { extractUrls } from "./LinkPreview";
+import LinkPreview, { extractUrls, renderTextWithLinks } from "./LinkPreview";
 import { MOOD_ICONS } from "../../assets/moods";
 
 interface Props {
@@ -329,7 +329,7 @@ export default function MessageBubble({ message }: Props) {
                   : "bg-white text-text-primary rounded-tl-md shadow-sm"
               }`}
           >
-            {message.content}
+            {message.kind === "text" && message.content ? renderTextWithLinks(message.content) : message.content}
           </div>
           {message.kind === "text" && message.content && extractUrls(message.content).map((url) => (
             <LinkPreview key={url} url={url} />
