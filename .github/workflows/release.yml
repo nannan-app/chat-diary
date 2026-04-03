@@ -87,26 +87,93 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
+          set -euxo pipefail
           KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain-db
+
+          echo "=== Step 1: Create keychain ==="
           security create-keychain -p "ci" "$KEYCHAIN_PATH"
+
+          echo "=== Step 2: Set as default keychain ==="
           security default-keychain -s "$KEYCHAIN_PATH"
+
+          echo "=== Step 3: Set keychain settings ==="
           security set-keychain-settings -lut 3600 "$KEYCHAIN_PATH"
+
+          echo "=== Step 4: Unlock keychain ==="
           security unlock-keychain -p "ci" "$KEYCHAIN_PATH"
+
+          echo "=== Step 5: Decode certificate ==="
           echo "$APPLE_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/cert.p12
+          ls -la $RUNNER_TEMP/cert.p12
+          echo "Certificate file size: $(wc -c < $RUNNER_TEMP/cert.p12) bytes"
+
+          echo "=== Step 6: Import certificate ==="
           security import $RUNNER_TEMP/cert.p12 -k "$KEYCHAIN_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -T /usr/bin/codesign -T /usr/bin/security -T /usr/bin/productbuild
+          echo "Import exit code: $?"
+
+          echo "=== Step 7: Set partition list ==="
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "ci" "$KEYCHAIN_PATH"
+          echo "Partition list exit code: $?"
+
+          echo "=== Step 8: Set keychain search list ==="
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          echo "Current keychain search list:"
+          security list-keychains -d user
+
+          echo "=== Step 9: Verify default keychain ==="
+          security default-keychain
+
+          echo "=== Step 10: Find codesigning identities in build keychain ==="
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+          echo "=== Step 11: Find codesigning identities in ALL keychains ==="
+          security find-identity -v -p codesigning
+
+          echo "=== Step 12: Dump all identities (no filter) ==="
+          security find-identity -v "$KEYCHAIN_PATH"
+
+          echo "=== Step 13: Verify keychain is still unlocked ==="
+          security show-keychain-info "$KEYCHAIN_PATH"
+
+      - name: Verify codesign before build
+        if: contains(matrix.target, 'apple-darwin')
+        run: |
+          set -euxo pipefail
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain-db
+
+          echo "=== Keychain search list ==="
+          security list-keychains -d user
+
+          echo "=== Default keychain ==="
+          security default-keychain
+
+          echo "=== Unlock keychain again (in case of timeout) ==="
+          security unlock-keychain -p "ci" "$KEYCHAIN_PATH"
+
+          echo "=== Codesigning identities ==="
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning
+
+          echo "=== Test codesign with a dummy file ==="
+          echo "test" > /tmp/test_sign_file
+          codesign --sign "Developer ID Application: Lin Mo (9V2W2U87ZG)" --keychain "$KEYCHAIN_PATH" /tmp/test_sign_file && echo "Test sign SUCCESS" || echo "Test sign FAILED"
 
       # ── macOS & Linux: build with tauri, upload manually ──
       - name: Build Tauri app (macOS)
         if: contains(matrix.target, 'apple-darwin')
         env:
           APPLE_SIGNING_IDENTITY: "Developer ID Application: Lin Mo (9V2W2U87ZG)"
+          APPLE_KEYCHAIN: ${{ runner.temp }}/build.keychain-db
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: bun tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+        run: |
+          set -euxo pipefail
+          echo "=== Pre-build: unlock keychain ==="
+          security unlock-keychain -p "ci" "$APPLE_KEYCHAIN"
+          security find-identity -v -p codesigning "$APPLE_KEYCHAIN"
+          echo "=== Starting Tauri build ==="
+          bun tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} -v
 
       - name: Build Tauri app (Linux)
         if: matrix.platform == 'ubuntu-22.04'
