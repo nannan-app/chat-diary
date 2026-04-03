@@ -45,9 +45,9 @@ export default function AppShell() {
     });
   }, [loadToday]);
 
-  // Refresh messages when quick-capture sends a new message
+  // Refresh messages when quick-capture or telegram sends a new message
   useEffect(() => {
-    const unlisten = listen("quick-capture-sent", () => {
+    const reloadCurrentDay = () => {
       const { selectedDate, loadDay, loadToday } = useDiaryStore.getState();
       const today = dayjs().format("YYYY-MM-DD");
       if (selectedDate === today) {
@@ -55,8 +55,13 @@ export default function AppShell() {
       } else {
         loadDay(selectedDate);
       }
-    });
-    return () => { unlisten.then((fn) => fn()); };
+    };
+    const u1 = listen("quick-capture-sent", reloadCurrentDay);
+    const u2 = listen("telegram-message-received", reloadCurrentDay);
+    return () => {
+      u1.then((fn) => fn());
+      u2.then((fn) => fn());
+    };
   }, []);
 
   // Keyboard shortcuts

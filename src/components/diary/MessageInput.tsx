@@ -41,11 +41,13 @@ export default function MessageInput() {
   const setEditingMessage = useUIStore((s) => s.setEditingMessage);
   const editMessage = useDiaryStore((s) => s.editMessage);
 
+  const showSettings = useUIStore((s) => s.showSettings);
+
   const wordCount = useDiaryStore((s) =>
     s.messages.reduce((acc, m) => acc + (m.content?.length || 0), 0)
   );
 
-  // Check if AI is configured
+  // Check if AI is configured (re-check when settings panel closes)
   useEffect(() => {
     ipc.getAllSettings().then((pairs) => {
       const map: Record<string, string> = {};
@@ -53,7 +55,7 @@ export default function MessageInput() {
       const provider = map.ai_provider || "openai";
       setAiConfigured(!!(map[`ai_api_key_${provider}`] || provider === "ollama"));
     });
-  }, []);
+  }, [showSettings]);
 
   const handleTyping = useCallback(() => {
     setIsTyping(true);

@@ -1,5 +1,5 @@
 use serde::Serialize;
-use tauri::State;
+use tauri::{AppHandle, State};
 
 use crate::error::MurmurError;
 use crate::state::{AppState, SpaceType};
@@ -14,6 +14,7 @@ pub struct TelegramStatus {
 #[tauri::command]
 pub async fn start_telegram_bot(
     state: State<'_, AppState>,
+    app_handle: AppHandle,
     token: String,
 ) -> Result<TelegramStatus, MurmurError> {
     // Check if already running
@@ -74,6 +75,7 @@ pub async fn start_telegram_bot(
         space,
         master_key,
         shutdown_rx,
+        app_handle,
     );
 
     // Store handle and shutdown sender

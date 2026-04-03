@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use tauri::{AppHandle, Emitter};
 use tokio::sync::watch;
 
 use crate::db::{connection, diary_repo, media_repo};
@@ -49,6 +50,7 @@ pub fn start_polling(
     space: SpaceType,
     master_key: Option<[u8; 32]>,
     shutdown_rx: watch::Receiver<bool>,
+    app_handle: AppHandle,
 ) -> TelegramBotHandle {
     let join_handle = tokio::spawn(polling_loop(
         token,
@@ -57,6 +59,7 @@ pub fn start_polling(
         space,
         master_key,
         shutdown_rx,
+        app_handle,
     ));
 
     TelegramBotHandle {
@@ -72,6 +75,7 @@ async fn polling_loop(
     space: SpaceType,
     master_key: Option<[u8; 32]>,
     mut shutdown_rx: watch::Receiver<bool>,
+    app_handle: AppHandle,
 ) {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
@@ -182,6 +186,7 @@ async fn polling_loop(
                                     eprintln!("[telegram] Failed to save photo: {}", e);
                                     send_reply(&client, &token, chat_id, "❌ 图片保存失败").await;
                                 } else {
+                                    app_handle.emit("telegram-message-received", ()).ok();
                                     send_reply(&client, &token, chat_id, "✅ 已记录").await;
                                 }
                             }
@@ -208,6 +213,7 @@ async fn polling_loop(
                         eprintln!("[telegram] Failed to handle text: {}", e);
                         send_reply(&client, &token, chat_id, "❌ 保存失败").await;
                     } else {
+                        app_handle.emit("telegram-message-received", ()).ok();
                         send_reply(&client, &token, chat_id, "✅ 已记录").await;
                     }
                 }
