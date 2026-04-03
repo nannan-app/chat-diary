@@ -107,6 +107,13 @@ jobs:
           ls -la $RUNNER_TEMP/cert.p12
           echo "Certificate file size: $(wc -c < $RUNNER_TEMP/cert.p12) bytes"
 
+          echo "=== Step 5.5: Install Apple intermediate certificates ==="
+          curl -sL -o $RUNNER_TEMP/AppleWWDRCAG3.cer https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+          curl -sL -o $RUNNER_TEMP/DeveloperIDG2CA.cer https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+          security import $RUNNER_TEMP/AppleWWDRCAG3.cer -k "$KEYCHAIN_PATH" -T /usr/bin/codesign
+          security import $RUNNER_TEMP/DeveloperIDG2CA.cer -k "$KEYCHAIN_PATH" -T /usr/bin/codesign
+          echo "Intermediate certs imported"
+
           echo "=== Step 6: Import certificate ==="
           security import $RUNNER_TEMP/cert.p12 -k "$KEYCHAIN_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -T /usr/bin/codesign -T /usr/bin/security -T /usr/bin/productbuild
           echo "Import exit code: $?"
