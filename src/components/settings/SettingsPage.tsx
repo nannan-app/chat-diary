@@ -621,9 +621,14 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   {t("settings.check")}
                 </button>
               </SettingItem>
-              <div className="mt-6 text-center text-text-hint text-xs">
+              <div className="mt-6 text-center text-text-hint text-xs space-y-1">
                 <p>{t("settings.appName")}</p>
-                <p className="mt-1">{t("settings.tagline")}</p>
+                <p>{t("settings.tagline")}</p>
+                <p className="mt-3">
+                  <a href="https://nannan.app" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">nannan.app</a>
+                  <span className="mx-2">·</span>
+                  <a href="https://x.com/lolieatapple" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">@lolieatapple</a>
+                </p>
               </div>
             </div>
           )}
