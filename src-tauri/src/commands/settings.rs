@@ -50,6 +50,14 @@ pub fn set_setting(state: State<AppState>, key: String, value: String) -> Result
 }
 
 #[tauri::command]
+pub fn delete_setting(state: State<AppState>, key: String) -> Result<(), MurmurError> {
+    with_db(&state, |conn| {
+        conn.execute("DELETE FROM settings WHERE key = ?1", rusqlite::params![key])?;
+        Ok(())
+    })
+}
+
+#[tauri::command]
 pub fn get_all_settings(state: State<AppState>) -> Result<Vec<(String, String)>, MurmurError> {
     with_db(&state, |conn| {
         let mut stmt = conn.prepare("SELECT key, value FROM settings")?;

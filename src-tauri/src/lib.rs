@@ -177,6 +177,7 @@ pub fn run() {
             // Settings
             commands::settings::get_setting,
             commands::settings::set_setting,
+            commands::settings::delete_setting,
             commands::settings::get_all_settings,
             // Tags
             commands::tags::get_tags,

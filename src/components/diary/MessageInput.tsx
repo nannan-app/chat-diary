@@ -50,7 +50,8 @@ export default function MessageInput() {
     ipc.getAllSettings().then((pairs) => {
       const map: Record<string, string> = {};
       for (const [k, v] of pairs) map[k] = v;
-      setAiConfigured(!!(map.ai_api_key || map.ai_provider === "ollama"));
+      const provider = map.ai_provider || "openai";
+      setAiConfigured(!!(map[`ai_api_key_${provider}`] || provider === "ollama"));
     });
   }, []);
 
@@ -100,7 +101,7 @@ export default function MessageInput() {
       for (const [k, v] of settings) settingsMap[k] = v;
 
       const provider = settingsMap.ai_provider || "openai";
-      const apiKey = settingsMap.ai_api_key || "";
+      const apiKey = settingsMap[`ai_api_key_${provider}`] || "";
       const personality = settingsMap.ai_personality || t("settings.aiDefaultPersonality");
 
       const message = await ipc.aiSummarize({

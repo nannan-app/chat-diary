@@ -34,9 +34,20 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     getVersion().then(setAppVersion);
-    ipc.getAllSettings().then((pairs) => {
+    ipc.getAllSettings().then(async (pairs) => {
       const map: Record<string, string> = {};
       for (const [k, v] of pairs) map[k] = v;
+      // Migrate legacy shared ai_api_key → per-provider key
+      if (map.ai_api_key) {
+        const provider = map.ai_provider || "openai";
+        const perProviderKey = `ai_api_key_${provider}`;
+        if (!map[perProviderKey]) {
+          await ipc.setSetting(perProviderKey, map.ai_api_key);
+          map[perProviderKey] = map.ai_api_key;
+        }
+        await ipc.deleteSetting("ai_api_key");
+        delete map.ai_api_key;
+      }
       setSettings(map);
     });
     ipc.getWrongPasswordAction().then(setWrongPwAction);
@@ -243,6 +254,11 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               ollama: { model: "llama3.2", url: "http://localhost:11434/v1/chat/completions" },
               custom: { model: "", url: "" },
             };
+            const apiKeyFor = (provider: string) =>
+              settings[`ai_api_key_${provider}`] || "";
+            const setApiKeyFor = (provider: string, value: string) =>
+              updateSetting(`ai_api_key_${provider}`, value);
+            const currentProvider = settings.ai_provider || "openai";
             const switchProvider = async (provider: string) => {
               const defaults = AI_DEFAULTS[provider] || AI_DEFAULTS.openai;
               await updateSetting("ai_provider", provider);
@@ -271,8 +287,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                 <SettingItem label="API Key">
                   <input
                     type="password"
-                    value={settings.ai_api_key || ""}
-                    onChange={(e) => updateSetting("ai_api_key", e.target.value)}
+                    value={apiKeyFor(currentProvider)}
+                    onChange={(e) => setApiKeyFor(currentProvider, e.target.value)}
                     placeholder="sk-..."
                     className="text-sm border border-border rounded-lg px-2 py-1 w-48"
                   />

@@ -1,6 +1,6 @@
 [package]
 name = "murmur"
-version = "0.4.1"
+version = "0.5.0"
 description = "Chat-style encrypted diary app"
 authors = ["you"]
 edition = "2021"

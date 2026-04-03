@@ -200,3 +200,5 @@ export const setSetting = (key: string, value: string) =>
   invoke<void>("set_setting", { key, value });
 export const getAllSettings = () =>
   invoke<[string, string][]>("get_all_settings");
+export const deleteSetting = (key: string) =>
+  invoke<void>("delete_setting", { key });
