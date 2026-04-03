@@ -97,13 +97,17 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain
 
       # ── macOS & Linux: build with tauri, upload manually ──
-      - name: Build Tauri app
-        if: matrix.target != 'x86_64-pc-windows-msvc'
+      - name: Build Tauri app (macOS)
+        if: contains(matrix.target, 'apple-darwin')
         env:
-          APPLE_SIGNING_IDENTITY: ${{ contains(matrix.target, 'apple-darwin') && 'Developer ID Application: Lin Mo (9V2W2U87ZG)' || '' }}
+          APPLE_SIGNING_IDENTITY: "Developer ID Application: Lin Mo (9V2W2U87ZG)"
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bun tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - name: Build Tauri app (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
         run: bun tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
       - name: Upload macOS dmg
