@@ -58,9 +58,11 @@ export default function AppShell() {
     };
     const u1 = listen("quick-capture-sent", reloadCurrentDay);
     const u2 = listen("telegram-message-received", reloadCurrentDay);
+    const u3 = listen("wechat-message-received", reloadCurrentDay);
     return () => {
       u1.then((fn) => fn());
       u2.then((fn) => fn());
+      u3.then((fn) => fn());
     };
   }, []);
 

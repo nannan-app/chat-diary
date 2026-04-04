@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut, Send, Copy, Download, Check } from "lucide-react";
+import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut, Send, MessageCircle, Copy, Download, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { getVersion } from "@tauri-apps/api/app";
 import * as ipc from "../../lib/ipc";
 import { useAuthStore } from "../../stores/authStore";
 
-type Section = "account" | "ai" | "telegram" | "writing" | "display" | "data" | "about";
+type Section = "account" | "ai" | "telegram" | "wechat" | "writing" | "display" | "data" | "about";
 
 export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
@@ -29,6 +29,13 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const [tgUsername, setTgUsername] = useState<string | null>(null);
   const [tgError, setTgError] = useState("");
   const [tgLoading, setTgLoading] = useState(false);
+  const [wxRunning, setWxRunning] = useState(false);
+  const [wxAccountId, setWxAccountId] = useState<string | null>(null);
+  const [wxLoggedIn, setWxLoggedIn] = useState(false);
+  const [wxError, setWxError] = useState("");
+  const [wxLoading, setWxLoading] = useState(false);
+  const [wxQrCode, setWxQrCode] = useState<string | null>(null);
+  const [wxQrStatus, setWxQrStatus] = useState<string | null>(null);
   const [appVersion, setAppVersion] = useState("");
   const logout = useAuthStore((s) => s.logout);
 
@@ -49,11 +56,16 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
         delete map.ai_api_key;
       }
       setSettings(map);
+      if (map.wechat_bot_token) setWxLoggedIn(true);
     });
     ipc.getWrongPasswordAction().then(setWrongPwAction);
     ipc.getTelegramStatus().then((s) => {
       setTgRunning(s.running);
       setTgUsername(s.bot_username);
+    });
+    ipc.getWechatStatus().then((s) => {
+      setWxRunning(s.running);
+      setWxAccountId(s.account_id);
     });
   }, []);
 
@@ -66,6 +78,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
     { id: "account", label: t("settings.account"), icon: ShieldCheck },
     { id: "ai", label: t("settings.ai"), icon: Bot },
     { id: "telegram", label: "Telegram", icon: Send },
+    { id: "wechat", label: t("settings.wxLabel") || "WeChat", icon: MessageCircle },
     { id: "writing", label: t("settings.writing"), icon: PenLine },
     { id: "display", label: t("settings.display"), icon: Palette },
     { id: "data", label: t("settings.data"), icon: Database },
@@ -395,6 +408,148 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                 <p>1. {t("settings.tgStep1")}</p>
                 <p>2. {t("settings.tgStep2")}</p>
                 <p>3. {t("settings.tgStep3")}</p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "wechat" && (
+            <div className="space-y-4">
+              <p className="text-xs text-text-hint mb-2">{t("settings.wxDesc")}</p>
+              <SettingItem label={t("settings.wxStatus")}>
+                <span className={`text-sm ${wxRunning ? "text-green-500" : "text-text-hint"}`}>
+                  {wxRunning ? `✅ ${wxAccountId || t("settings.wxConnected")}` : t("settings.wxStopped")}
+                </span>
+              </SettingItem>
+
+              {!wxLoggedIn && !wxQrCode && (
+                <button
+                  onClick={async () => {
+                    setWxError(""); setWxLoading(true);
+                    try {
+                      const qr = await ipc.wechatGetQrcode();
+                      setWxQrCode(qr.qrcode_data_uri);
+                      
+                      setWxQrStatus("wait");
+                      // Start polling loop
+                      const poll = async () => {
+                        let currentQrId = qr.qrcode;
+                        while (true) {
+                          try {
+                            const s = await ipc.wechatPollQrStatus(currentQrId);
+                            setWxQrStatus(s.status);
+                            if (s.status === "confirmed") {
+                              setWxLoggedIn(true);
+                              setWxQrCode(null);
+                              
+                              setWxQrStatus(null);
+                              // Auto-start bot after login
+                              try {
+                                const result = await ipc.startWechatBot();
+                                setWxRunning(result.running);
+                                setWxAccountId(result.account_id);
+                              } catch {}
+                              break;
+                            } else if (s.status === "expired") {
+                              // Refresh QR code
+                              try {
+                                const newQr = await ipc.wechatGetQrcode();
+                                setWxQrCode(newQr.qrcode_data_uri);
+                                
+                                currentQrId = newQr.qrcode;
+                                setWxQrStatus("wait");
+                              } catch {
+                                setWxError(t("settings.wxQrExpired"));
+                                setWxQrCode(null);
+                                break;
+                              }
+                            }
+                            // "wait" or "scaned" - continue polling
+                          } catch (e: any) {
+                            setWxError(String(e));
+                            setWxQrCode(null);
+                            break;
+                          }
+                        }
+                      };
+                      poll();
+                    } catch (e: any) {
+                      setWxError(String(e));
+                    } finally { setWxLoading(false); }
+                  }}
+                  disabled={wxLoading}
+                  className="text-sm bg-accent text-white px-4 py-1.5 rounded-lg hover:bg-accent-hover disabled:opacity-50"
+                >
+                  {wxLoading ? t("settings.wxConnecting") : t("settings.wxLogin")}
+                </button>
+              )}
+
+              {wxQrCode && (
+                <div className="flex flex-col items-center gap-2 py-2">
+                  <img src={wxQrCode} alt="WeChat QR Code" className="w-48 h-48 rounded-lg border border-border" />
+                  <p className="text-xs text-text-hint">
+                    {wxQrStatus === "scaned" ? t("settings.wxScanned") : t("settings.wxScanPrompt")}
+                  </p>
+                  <button
+                    onClick={() => { setWxQrCode(null); setWxQrStatus(null); }}
+                    className="text-xs text-text-hint hover:text-text-secondary"
+                  >
+                    {t("settings.cancel")}
+                  </button>
+                </div>
+              )}
+
+              {wxLoggedIn && !wxQrCode && (
+                <div className="flex gap-2">
+                  {!wxRunning ? (
+                    <button
+                      onClick={async () => {
+                        setWxLoading(true); setWxError("");
+                        try {
+                          const result = await ipc.startWechatBot();
+                          setWxRunning(result.running);
+                          setWxAccountId(result.account_id);
+                        } catch (e: any) {
+                          setWxError(String(e));
+                        } finally { setWxLoading(false); }
+                      }}
+                      disabled={wxLoading}
+                      className="text-sm bg-accent text-white px-4 py-1.5 rounded-lg hover:bg-accent-hover disabled:opacity-50"
+                    >
+                      {wxLoading ? t("settings.wxConnecting") : t("settings.wxStart")}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        await ipc.stopWechatBot();
+                        setWxRunning(false);
+                        setWxAccountId(null);
+                      }}
+                      className="text-sm bg-red-400 text-white px-4 py-1.5 rounded-lg hover:bg-red-500"
+                    >
+                      {t("settings.wxStop")}
+                    </button>
+                  )}
+                  <button
+                    onClick={async () => {
+                      await ipc.wechatLogout();
+                      setWxRunning(false);
+                      setWxAccountId(null);
+                      setWxLoggedIn(false);
+                    }}
+                    className="text-sm text-red-400 hover:text-red-500 px-4 py-1.5 rounded-lg border border-red-200 hover:border-red-300"
+                  >
+                    {t("settings.wxLogout")}
+                  </button>
+                </div>
+              )}
+
+              {wxError && <p className="text-xs text-red-400">{wxError}</p>}
+
+              <div className="mt-4 p-3 bg-warm-50 rounded-lg text-xs text-text-secondary space-y-1">
+                <p className="font-medium">{t("settings.wxHowTo")}</p>
+                <p>1. {t("settings.wxStep1")}</p>
+                <p>2. {t("settings.wxStep2")}</p>
+                <p>3. {t("settings.wxStep3")}</p>
               </div>
             </div>
           )}

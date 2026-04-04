@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use zeroize::Zeroize;
 
 use crate::telegram::TelegramBotHandle;
+use crate::wechat::WechatBotHandle;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub enum SpaceType {
@@ -37,6 +38,8 @@ pub struct AppState {
     pub is_setup: Mutex<bool>,
     pub telegram_bot: Mutex<Option<TelegramBotHandle>>,
     pub telegram_shutdown_tx: Mutex<Option<tokio::sync::watch::Sender<bool>>>,
+    pub wechat_bot: Mutex<Option<WechatBotHandle>>,
+    pub wechat_shutdown_tx: Mutex<Option<tokio::sync::watch::Sender<bool>>>,
 }
 
 impl AppState {
@@ -55,6 +58,8 @@ impl AppState {
             is_setup: Mutex::new(false),
             telegram_bot: Mutex::new(None),
             telegram_shutdown_tx: Mutex::new(None),
+            wechat_bot: Mutex::new(None),
+            wechat_shutdown_tx: Mutex::new(None),
         }
     }
 }

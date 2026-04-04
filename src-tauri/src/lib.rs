@@ -5,6 +5,7 @@ mod error;
 mod media;
 mod state;
 mod telegram;
+mod wechat;
 
 use tauri::Manager;
 use tauri::webview::WebviewWindowBuilder;
@@ -207,6 +208,13 @@ pub fn run() {
             commands::telegram::start_telegram_bot,
             commands::telegram::stop_telegram_bot,
             commands::telegram::get_telegram_status,
+            // WeChat
+            commands::wechat::wechat_get_qrcode,
+            commands::wechat::wechat_poll_qr_status,
+            commands::wechat::start_wechat_bot,
+            commands::wechat::stop_wechat_bot,
+            commands::wechat::get_wechat_status,
+            commands::wechat::wechat_logout,
             // URL Meta
             commands::url_meta::fetch_url_meta,
             // Shortcut

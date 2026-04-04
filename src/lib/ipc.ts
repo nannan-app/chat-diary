@@ -155,6 +155,20 @@ export const stopTelegramBot = () =>
 export const getTelegramStatus = () =>
   invoke<{ running: boolean; bot_username: string | null }>("get_telegram_status");
 
+// WeChat
+export const wechatGetQrcode = () =>
+  invoke<{ qrcode: string; qrcode_data_uri: string }>("wechat_get_qrcode");
+export const wechatPollQrStatus = (qrcode: string) =>
+  invoke<{ status: string; bot_token: string | null; bot_id: string | null; base_url: string | null; user_id: string | null }>("wechat_poll_qr_status", { qrcode });
+export const startWechatBot = () =>
+  invoke<{ running: boolean; account_id: string | null }>("start_wechat_bot");
+export const stopWechatBot = () =>
+  invoke<{ running: boolean; account_id: string | null }>("stop_wechat_bot");
+export const getWechatStatus = () =>
+  invoke<{ running: boolean; account_id: string | null }>("get_wechat_status");
+export const wechatLogout = () =>
+  invoke<{ running: boolean; account_id: string | null }>("wechat_logout");
+
 // URL Meta
 export const fetchUrlMeta = (url: string) =>
   invoke<{ url: string; title: string | null; description: string | null; image: string | null; site_name: string | null }>("fetch_url_meta", { url });
