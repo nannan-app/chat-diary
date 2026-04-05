@@ -378,6 +378,12 @@ async fn polling_loop(
                             // IMAGE
                             2 => {
                                 let image_item = &item["image_item"];
+                                // Dump image_item JSON for debugging (truncate to avoid huge messages)
+                                let debug_json = {
+                                    let full = serde_json::to_string(image_item).unwrap_or_default();
+                                    if full.len() > 800 { format!("{}...", &full[..800]) } else { full }
+                                };
+                                eprintln!("[wechat] image_item JSON: {}", debug_json);
                                 match download_wechat_image(&client, image_item).await {
                                     Ok(image_bytes) => {
                                         if let Err(e) = save_photo(
@@ -388,11 +394,21 @@ async fn polling_loop(
                                             &image_bytes,
                                             None,
                                         ) {
-                                            eprintln!("[wechat] Failed to save photo: {}", e);
+                                            let magic = image_bytes.iter().take(8)
+                                                .map(|b| format!("{:02x}", b))
+                                                .collect::<Vec<_>>().join(" ");
+                                            eprintln!("[wechat] Failed to save photo (len={}, magic={}): {}", image_bytes.len(), magic, e);
+                                            // Send truncated image_item JSON so user can report back
+                                            let short_json = if debug_json.len() > 500 {
+                                                format!("{}...", &debug_json[..500])
+                                            } else {
+                                                debug_json.clone()
+                                            };
+                                            let err_msg = format!("❌ 图片保存失败\nmagic=[{}] len={}\n\nimage_item:\n{}", magic, image_bytes.len(), short_json);
                                             send_reply(
                                                 &client, &token, &base_url, from_user_id,
                                                 msg["context_token"].as_str(),
-                                                "❌ 图片保存失败",
+                                                &err_msg,
                                             ).await;
                                         } else {
                                             app_handle.emit("wechat-message-received", ()).ok();
@@ -460,24 +476,26 @@ fn handle_text(conn: &rusqlite::Connection, text: &str) -> Result<(), MurmurErro
     Ok(())
 }
 
-/// Download image from WeChat CDN and decrypt it
+/// Download image from WeChat CDN and decrypt it.
+/// Key priority: image_item.aeskey (hex) > image_item.media.aes_key (base64)
 async fn download_wechat_image(
     client: &reqwest::Client,
     image_item: &serde_json::Value,
 ) -> Result<Vec<u8>, MurmurError> {
     let media = &image_item["media"];
-    let encrypt_query_param = media["encrypt_query_param"]
-        .as_str()
-        .ok_or_else(|| MurmurError::General("No encrypt_query_param in image".to_string()))?;
-    let aes_key_hex = media["aes_key"]
-        .as_str()
-        .ok_or_else(|| MurmurError::General("No aes_key in image".to_string()))?;
-    let encrypt_type = media["encrypt_type"].as_i64().unwrap_or(0);
 
-    let download_url = format!(
-        "https://novac2c.cdn.weixin.qq.com/c2c/download?encrypted_query_param={}",
-        urlencoding::encode(encrypt_query_param)
-    );
+    // Determine download URL: full_url takes precedence
+    let download_url = if let Some(full_url) = media["full_url"].as_str() {
+        full_url.to_string()
+    } else {
+        let encrypt_query_param = media["encrypt_query_param"]
+            .as_str()
+            .ok_or_else(|| MurmurError::General("No encrypt_query_param in image".to_string()))?;
+        format!(
+            "https://novac2c.cdn.weixin.qq.com/c2c/download?encrypted_query_param={}",
+            urlencoding::encode(encrypt_query_param)
+        )
+    };
 
     let resp = client
         .get(&download_url)
@@ -492,40 +510,90 @@ async fn download_wechat_image(
         )));
     }
 
-    let encrypted_bytes = resp
+    let raw_bytes = resp
         .bytes()
         .await
         .map_err(|e| MurmurError::General(format!("CDN read failed: {}", e)))?
         .to_vec();
 
-    if encrypt_type == 1 && !aes_key_hex.is_empty() {
-        decrypt_aes_ecb(&encrypted_bytes, aes_key_hex)
+    // Resolve AES key following official SDK priority:
+    // 1. image_item.aeskey (hex-encoded 16 bytes) → decode from hex
+    // 2. image_item.media.aes_key (base64) → decode, then check if it's hex-inside-base64
+    let aes_key = resolve_aes_key(image_item)?;
+
+    if let Some(key) = aes_key {
+        decrypt_aes_128_ecb(&raw_bytes, &key)
     } else {
-        Ok(encrypted_bytes)
+        Ok(raw_bytes)
     }
 }
 
-/// AES-128-ECB decryption with PKCS7 unpadding
-fn decrypt_aes_ecb(ciphertext: &[u8], hex_key: &str) -> Result<Vec<u8>, MurmurError> {
-    use aes::cipher::{BlockDecrypt, KeyInit};
-    use aes::Aes128;
-
-    let key_bytes = hex::decode(hex_key)
-        .map_err(|e| MurmurError::General(format!("Invalid AES key hex: {}", e)))?;
-    if key_bytes.len() != 16 {
-        return Err(MurmurError::General(format!(
-            "AES key must be 16 bytes, got {}",
-            key_bytes.len()
-        )));
+/// Resolve the 16-byte AES key from image_item, following the official SDK logic:
+/// 1. image_item.aeskey (hex string) → hex decode to 16 bytes
+/// 2. image_item.media.aes_key (base64) → base64 decode → if 32 ASCII hex chars, hex decode again → 16 bytes
+///                                                        → if 16 raw bytes, use directly
+fn resolve_aes_key(image_item: &serde_json::Value) -> Result<Option<[u8; 16]>, MurmurError> {
+    // Priority 1: image_item.aeskey (hex-encoded, no underscore)
+    if let Some(hex_key) = image_item["aeskey"].as_str() {
+        if !hex_key.is_empty() {
+            let bytes = hex::decode(hex_key)
+                .map_err(|e| MurmurError::General(format!("Invalid aeskey hex: {}", e)))?;
+            if bytes.len() == 16 {
+                eprintln!("[wechat] Using image_item.aeskey (hex → 16 bytes)");
+                let mut key = [0u8; 16];
+                key.copy_from_slice(&bytes);
+                return Ok(Some(key));
+            }
+        }
     }
 
-    let cipher = Aes128::new(aes::cipher::generic_array::GenericArray::from_slice(&key_bytes));
+    // Priority 2: image_item.media.aes_key (base64)
+    if let Some(b64_key) = image_item["media"]["aes_key"].as_str() {
+        if !b64_key.is_empty() {
+            use base64::Engine;
+            let decoded = base64::engine::general_purpose::STANDARD.decode(b64_key)
+                .or_else(|_| base64::engine::general_purpose::STANDARD_NO_PAD.decode(b64_key))
+                .map_err(|e| MurmurError::General(format!("Invalid aes_key base64: {}", e)))?;
 
-    let mut decrypted = ciphertext.to_vec();
-    if decrypted.len() % 16 != 0 {
+            if decoded.len() == 16 {
+                // Direct 16 raw bytes
+                eprintln!("[wechat] Using media.aes_key (base64 → 16 raw bytes)");
+                let mut key = [0u8; 16];
+                key.copy_from_slice(&decoded);
+                return Ok(Some(key));
+            } else if decoded.len() == 32 && decoded.iter().all(|b| b.is_ascii_hexdigit()) {
+                // 32 ASCII hex chars → decode again to get 16 bytes
+                let hex_str = std::str::from_utf8(&decoded)
+                    .map_err(|e| MurmurError::General(format!("aes_key hex-in-base64 not UTF-8: {}", e)))?;
+                let bytes = hex::decode(hex_str)
+                    .map_err(|e| MurmurError::General(format!("aes_key hex-in-base64 invalid hex: {}", e)))?;
+                eprintln!("[wechat] Using media.aes_key (base64 → 32 hex chars → 16 bytes)");
+                let mut key = [0u8; 16];
+                key.copy_from_slice(&bytes);
+                return Ok(Some(key));
+            } else {
+                return Err(MurmurError::General(format!(
+                    "aes_key base64 decoded to {} bytes (expected 16 or 32 hex chars)",
+                    decoded.len()
+                )));
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+/// AES-128-ECB decryption with PKCS7 auto-unpadding
+fn decrypt_aes_128_ecb(ciphertext: &[u8], key: &[u8; 16]) -> Result<Vec<u8>, MurmurError> {
+    use aes::cipher::{BlockDecrypt, KeyInit};
+
+    if ciphertext.len() % 16 != 0 {
         return Err(MurmurError::General("Ciphertext not aligned to 16 bytes".to_string()));
     }
 
+    let cipher = aes::Aes128::new(aes::cipher::generic_array::GenericArray::from_slice(key));
+
+    let mut decrypted = ciphertext.to_vec();
     for chunk in decrypted.chunks_mut(16) {
         cipher.decrypt_block(aes::cipher::generic_array::GenericArray::from_mut_slice(chunk));
     }
@@ -545,6 +613,7 @@ fn decrypt_aes_ecb(ciphertext: &[u8], hex_key: &str) -> Result<Vec<u8>, MurmurEr
 
     Ok(decrypted)
 }
+
 
 fn save_photo(
     conn: &rusqlite::Connection,
