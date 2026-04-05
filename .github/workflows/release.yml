@@ -191,7 +191,9 @@ jobs:
         shell: bash
         run: |
           DMG=$(find src-tauri/target/${{ matrix.target }}/release/bundle -name '*.dmg' | head -1)
-          gh release upload "${{ github.ref_name }}" "$DMG#Murmur_${{ github.ref_name }}_${{ matrix.label }}.dmg" --clobber
+          DEST="Murmur_${{ github.ref_name }}_${{ matrix.label }}.dmg"
+          cp "$DMG" "$DEST"
+          gh release upload "${{ github.ref_name }}" "$DEST" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -200,7 +202,9 @@ jobs:
         shell: bash
         run: |
           DEB=$(find src-tauri/target/${{ matrix.target }}/release/bundle -name '*.deb' | head -1)
-          gh release upload "${{ github.ref_name }}" "$DEB#Murmur_${{ github.ref_name }}_${{ matrix.label }}.deb" --clobber
+          DEST="Murmur_${{ github.ref_name }}_${{ matrix.label }}.deb"
+          cp "$DEB" "$DEST"
+          gh release upload "${{ github.ref_name }}" "$DEST" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -209,7 +213,9 @@ jobs:
         shell: bash
         run: |
           AI=$(find src-tauri/target/${{ matrix.target }}/release/bundle -name '*.AppImage' | head -1)
-          gh release upload "${{ github.ref_name }}" "$AI#Murmur_${{ github.ref_name }}_${{ matrix.label }}.AppImage" --clobber
+          DEST="Murmur_${{ github.ref_name }}_${{ matrix.label }}.AppImage"
+          cp "$AI" "$DEST"
+          gh release upload "${{ github.ref_name }}" "$DEST" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
