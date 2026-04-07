@@ -219,15 +219,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── Windows: cargo build + portable zip ──
-      - name: Build frontend
+      # ── Windows: tauri build + portable zip ──
+      - name: Build Tauri app (Windows)
         if: matrix.target == 'x86_64-pc-windows-msvc'
-        run: bun run build
-
-      - name: Build Tauri (Windows)
-        if: matrix.target == 'x86_64-pc-windows-msvc'
-        run: cargo build --release --target ${{ matrix.target }}
-        working-directory: src-tauri
+        run: bun tauri build --target ${{ matrix.target }} --bundles none
 
       - name: Download WebView2 Bootstrapper
         if: matrix.target == 'x86_64-pc-windows-msvc'
