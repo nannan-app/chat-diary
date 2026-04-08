@@ -44,17 +44,12 @@ export default function SetupScreen() {
     navigator.clipboard.writeText(recoveryCode);
   };
 
-  const handleDownloadCode = () => {
-    const blob = new Blob(
-      [t("auth.setup.recoveryFileContent", { code: recoveryCode })],
-      { type: "text/plain" }
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "murmur-recovery-code.txt";
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownloadCode = async () => {
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+    const path = await save({ defaultPath: "murmur-recovery-code.txt" });
+    if (!path) return;
+    await writeTextFile(path, t("auth.setup.recoveryFileContent", { code: recoveryCode }));
   };
 
   const handleImportBackup = async () => {

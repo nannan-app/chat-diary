@@ -210,17 +210,12 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                       {recoveryCopied ? t("settings.copied") : t("settings.copy")}
                     </button>
                     <button
-                      onClick={() => {
-                        const blob = new Blob(
-                          [t("auth.setup.recoveryFileContent", { code: recoveryCode })],
-                          { type: "text/plain" }
-                        );
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = "murmur-recovery-code.txt";
-                        a.click();
-                        URL.revokeObjectURL(url);
+                      onClick={async () => {
+                        const { save } = await import("@tauri-apps/plugin-dialog");
+                        const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+                        const path = await save({ defaultPath: "murmur-recovery-code.txt" });
+                        if (!path) return;
+                        await writeTextFile(path, t("auth.setup.recoveryFileContent", { code: recoveryCode }));
                       }}
                       className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover px-2 py-1 rounded-lg border border-border hover:bg-warm-100 transition-colors"
                     >
@@ -264,6 +259,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               minimax: { model: "MiniMax-M2.7", url: "https://api.minimaxi.com/anthropic/v1/messages" },
               minimax_global: { model: "MiniMax-M2.7", url: "https://api.minimax.io/anthropic/v1/messages" },
               deepseek: { model: "deepseek-chat", url: "https://api.deepseek.com/v1/chat/completions" },
+              glm: { model: "glm-4-flash", url: "https://open.bigmodel.cn/api/paas/v4/chat/completions" },
               ollama: { model: "llama3.2", url: "http://localhost:11434/v1/chat/completions" },
               custom: { model: "", url: "" },
             };
@@ -292,6 +288,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   <option value="minimax">MiniMax ({t("settings.aiCN")})</option>
                   <option value="minimax_global">MiniMax (Global)</option>
                   <option value="deepseek">DeepSeek</option>
+                  <option value="glm">GLM ({t("settings.aiCN")})</option>
                   <option value="ollama">Ollama ({t("settings.aiLocal")})</option>
                   <option value="custom">{t("settings.aiCustom")}</option>
                 </select>
@@ -318,6 +315,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                     minimax: "MiniMax-M2.7",
                     minimax_global: "MiniMax-M2.7",
                     deepseek: "deepseek-chat",
+                    glm: "glm-4-flash",
                     ollama: "llama3.2",
                     openai: "gpt-4o-mini",
                     custom: "model-name",
@@ -325,7 +323,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                   className="text-sm border border-border rounded-lg px-2 py-1 w-48"
                 />
               </SettingItem>
-              {["custom", "openai", "minimax", "minimax_global", "deepseek", "ollama"].includes(settings.ai_provider || "openai") && (
+              {["custom", "openai", "minimax", "minimax_global", "deepseek", "glm", "ollama"].includes(settings.ai_provider || "openai") && (
                 <SettingItem label="Base URL">
                   <input
                     type="text"
@@ -334,6 +332,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
                     placeholder={{
                       ollama: "http://localhost:11434/v1/chat/completions",
                       deepseek: "https://api.deepseek.com/v1/chat/completions",
+                      glm: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
                       minimax: "https://api.minimaxi.com/anthropic/v1/messages",
                       minimax_global: "https://api.minimax.io/anthropic/v1/messages",
                     }[settings.ai_provider || ""] || "https://api.openai.com/v1/chat/completions"}

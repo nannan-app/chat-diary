@@ -223,17 +223,12 @@ export default function LoginScreen() {
                     {t("auth.setup.copy")}
                   </button>
                   <button
-                    onClick={() => {
-                      const blob = new Blob(
-                        [t("auth.setup.recoveryFileContent", { code: newRecoveryCode })],
-                        { type: "text/plain" }
-                      );
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = "murmur-recovery-code.txt";
-                      a.click();
-                      URL.revokeObjectURL(url);
+                    onClick={async () => {
+                      const { save } = await import("@tauri-apps/plugin-dialog");
+                      const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+                      const path = await save({ defaultPath: "murmur-recovery-code.txt" });
+                      if (!path) return;
+                      await writeTextFile(path, t("auth.setup.recoveryFileContent", { code: newRecoveryCode }));
                     }}
                     className="flex-1 py-2 rounded-lg border border-border text-text-primary text-sm hover:bg-warm-50"
                   >

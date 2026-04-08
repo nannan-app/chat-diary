@@ -97,6 +97,11 @@ pub async fn ai_summarize(
             let m = if model.is_empty() { "deepseek-chat".to_string() } else { model };
             call_openai_compatible(&url, &api_key, &m, &system_prompt, &messages_text).await?
         }
+        "glm" => {
+            let url = api_url.unwrap_or_else(|| "https://open.bigmodel.cn/api/paas/v4/chat/completions".to_string());
+            let m = if model.is_empty() { "glm-4-flash".to_string() } else { model };
+            call_openai_compatible(&url, &api_key, &m, &system_prompt, &messages_text).await?
+        }
         "ollama" => {
             let url = api_url.unwrap_or_else(|| "http://localhost:11434/v1/chat/completions".to_string());
             let m = if model.is_empty() { "llama3.2".to_string() } else { model };
