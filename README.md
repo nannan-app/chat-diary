@@ -1,5 +1,7 @@
 # Murmur (喃喃)
 
+[English](./README.md) | [中文](./README_CN.md)
+
 A privacy-first, chat-style desktop diary app. Write your daily thoughts like chatting with yourself — text, images, moods, and long-form articles, all encrypted locally.
 
 Built with **Tauri v2** (Rust backend + React frontend).
