@@ -125,7 +125,7 @@ export default function ChatView() {
       </div>
 
       {/* Messages area */}
-      <div ref={scrollContainerRef} className="relative z-[2] flex-1 overflow-y-auto py-3">
+      <div ref={scrollContainerRef} className="relative z-[2] flex-1 overflow-y-auto overflow-x-hidden py-3">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-text-hint text-sm">{t("app.loading")}</span>
