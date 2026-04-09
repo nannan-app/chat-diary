@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut, Send, MessageCircle, Copy, Download, Check } from "lucide-react";
+import { ShieldCheck, Bot, PenLine, Palette, Database, Info, LogOut, Send, MessageCircle, Copy, Download, Check, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { getVersion } from "@tauri-apps/api/app";
 import * as ipc from "../../lib/ipc";
@@ -98,8 +98,14 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-[680px] h-[480px] bg-white rounded-2xl shadow-xl flex overflow-hidden"
+        className="w-[680px] h-[480px] bg-white rounded-2xl shadow-xl flex overflow-hidden relative"
       >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-lg text-text-hint hover:text-text-primary hover:bg-warm-100 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
         {/* Left nav */}
         <div className="w-48 bg-sidebar-bg border-r border-border py-4 px-2 flex flex-col">
           {sections.map((s) => (
