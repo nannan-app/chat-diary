@@ -66,6 +66,38 @@ export default function AppShell() {
     };
   }, []);
 
+  // Auto-refresh when a new day starts (midnight crossing detection)
+  useEffect(() => {
+    let todayStr = dayjs().format("YYYY-MM-DD");
+
+    const checkNewDay = async () => {
+      const now = dayjs().format("YYYY-MM-DD");
+      if (now !== todayStr) {
+        todayStr = now;
+
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const isVisible = await getCurrentWindow().isVisible();
+
+        if (!isVisible) {
+          // Window is hidden — safe to jump to today so the user sees it on next open
+          useDiaryStore.getState().loadToday();
+        } else {
+          // Window is visible — only refresh sidebar, don't disrupt current view
+          const { getOrCreateToday, listDiaryDays } = await import("../../lib/ipc");
+          const todayDay = await getOrCreateToday();
+          useDiaryStore.setState({ todayDay: todayDay });
+          const d = dayjs(now);
+          const days = await listDiaryDays(d.year(), d.month() + 1);
+          useDiaryStore.setState({ diaryDays: days });
+        }
+      }
+    };
+
+    // Check every 30 seconds
+    const interval = setInterval(checkNewDay, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Keyboard shortcuts
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

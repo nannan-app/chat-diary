@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Quote, Pencil, Star, Tag as TagIcon, Trash2, Download } from "lucide-react";
+import { Quote, Pencil, Star, Tag as TagIcon, Trash2, Download, Copy } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { motion, AnimatePresence } from "framer-motion";
@@ -88,7 +88,26 @@ export default function ContextMenu() {
     await ipc.setMessageTags(messageId, newTags);
   };
 
+  const handleCopy = async () => {
+    if (!message) { hideContextMenu(); return; }
+    // Find the rendered message DOM element and copy with formatting
+    const el = document.querySelector(`[data-message-id="${message.id}"]`);
+    if (el) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      document.execCommand("copy");
+      selection?.removeAllRanges();
+    } else if (message.content) {
+      await navigator.clipboard.writeText(message.content);
+    }
+    hideContextMenu();
+  };
+
   const items = [
+    { label: t("menu.copy"), icon: Copy, action: handleCopy },
     { label: t("menu.quote"), icon: Quote, action: handleQuote },
     { label: t("menu.edit"), icon: Pencil, action: handleEdit },
     {
