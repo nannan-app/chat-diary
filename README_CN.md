@@ -107,4 +107,4 @@ e2e/                    # WebDriverIO E2E 测试
 
 ## 许可证
 
-私有项目，保留所有权利。
+本项目基于 [GNU Affero 通用公共许可证 v3.0](./LICENSE) 开源。
