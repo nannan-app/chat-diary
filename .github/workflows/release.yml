@@ -19,6 +19,7 @@ jobs:
             --repo "${{ github.repository }}" \
             --title "Murmur ${{ github.ref_name }}" \
             --notes "See the assets below to download and install." \
+            --draft \
             2>/dev/null || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
