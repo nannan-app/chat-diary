@@ -102,9 +102,10 @@ export default function QuickCapture() {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="记录一个想法... (Enter 保存, Esc 关闭)"
-          className="w-full px-4 py-3 rounded-xl bg-white/95 backdrop-blur-xl border border-border
-                     shadow-2xl text-sm text-text-primary placeholder:text-text-hint
-                     focus:outline-none focus:ring-2 focus:ring-accent/40"
+          className="w-full px-4 py-3 rounded-[14px] bg-paper-0/95 backdrop-blur-xl border border-paper-200
+                     shadow-2xl text-ink-900 placeholder:text-ink-400
+                     focus:outline-none focus:border-user-stroke italic"
+          style={{ fontFamily: "var(--font-serif)", fontSize: 15 }}
           autoFocus
         />
       </div>

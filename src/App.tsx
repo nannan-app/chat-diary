@@ -5,6 +5,7 @@ import LoginScreen from "./components/auth/LoginScreen";
 import SetupScreen from "./components/auth/SetupScreen";
 import AppShell from "./components/layout/AppShell";
 import QuickCapture from "./components/quick-capture/QuickCapture";
+import { applyTheme, watchSystemTheme, loadInitialTheme } from "./lib/theme";
 
 export default function App() {
   const { t } = useTranslation();
@@ -20,6 +21,13 @@ export default function App() {
   useEffect(() => {
     checkSetup();
   }, [checkSetup]);
+
+  // Theme init + follow-system watcher
+  useEffect(() => {
+    loadInitialTheme().then((mode) => applyTheme(mode));
+    const dispose = watchSystemTheme();
+    return dispose;
+  }, []);
 
   if (loading) {
     return (

@@ -169,12 +169,14 @@ export default function AppShell() {
         {secondaryPanelVisible && activeNav === "diary" && (
           <motion.div
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 260, opacity: 1 }}
+            animate={{ width: 256, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="border-r border-border overflow-hidden flex-shrink-0"
+            className="border-r border-paper-200 overflow-hidden flex-shrink-0"
           >
-            <DiaryList />
+            <div className="w-64 h-full">
+              <DiaryList />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

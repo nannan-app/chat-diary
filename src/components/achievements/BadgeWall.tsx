@@ -37,18 +37,27 @@ const BADGE_CATEGORIES: Record<string, string> = {
   night_owl: "easter",
 };
 
-import treeSeedling from "../../assets/illustrations/tree/seedling.png";
-import treeHerb from "../../assets/illustrations/tree/herb.png";
-import treePine from "../../assets/illustrations/tree/pine.png";
-import treeTree from "../../assets/illustrations/tree/tree.png";
-import treePalm from "../../assets/illustrations/tree/palm.png";
-
-function getTreeImage(days: number): string {
-  if (days < 7) return treeSeedling;
-  if (days < 30) return treeHerb;
-  if (days < 90) return treePine;
-  if (days < 365) return treeTree;
-  return treePalm;
+function TreeViz({ days }: { days: number }) {
+  const stage = days < 14 ? 1 : days < 60 ? 2 : days < 180 ? 3 : 4;
+  return (
+    <svg width="96" height="64" viewBox="0 0 96 64" style={{ color: "var(--color-sage-deep)" }}>
+      <line x1="6" y1="58" x2="90" y2="58" stroke="var(--color-paper-300)" strokeWidth="1" strokeDasharray="2 3" />
+      <path
+        d={stage >= 2 ? "M48 58 Q 48 48, 48 38" : "M48 58 L 48 52"}
+        stroke="var(--color-ink-700)"
+        strokeWidth="1.6"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {stage >= 3 && <path d="M48 50 Q 42 44, 36 40" stroke="var(--color-ink-700)" strokeWidth="1.2" fill="none" strokeLinecap="round" />}
+      {stage >= 3 && <path d="M48 46 Q 54 40, 60 36" stroke="var(--color-ink-700)" strokeWidth="1.2" fill="none" strokeLinecap="round" />}
+      {stage >= 2 && <circle cx="48" cy="36" r="8" fill="currentColor" opacity="0.6" />}
+      {stage >= 3 && <circle cx="36" cy="38" r="5" fill="currentColor" opacity="0.5" />}
+      {stage >= 3 && <circle cx="60" cy="34" r="5" fill="currentColor" opacity="0.5" />}
+      {stage >= 4 && <circle cx="30" cy="44" r="4" fill="currentColor" opacity="0.4" />}
+      {stage === 1 && <path d="M45 54 Q 48 50, 51 54" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" />}
+    </svg>
+  );
 }
 
 export default function BadgeWall() {
@@ -69,82 +78,113 @@ export default function BadgeWall() {
   const categoryKeys = ["persistence", "output", "mood", "photo", "explore", "easter"];
 
   return (
-    <div className="h-full overflow-y-auto">
-      {/* Growth tree header */}
-      <div className="text-center py-8 bg-gradient-to-b from-warm-100 to-main-bg">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-          className="mb-3"
-        >
-          <img src={getTreeImage(totalDays)} alt="growth tree" className="w-16 h-16 mx-auto" />
-        </motion.div>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-text-secondary text-sm"
-        >
-          {t("stats.tree.age", { days: totalDays })}
-        </motion.p>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-text-hint text-xs mt-1"
-        >
-          {t("stats.badgeCount", { unlocked: unlockedCount, total: achievements.length })}
-        </motion.p>
+    <div className="relative h-full flex flex-col bg-paper-0 overflow-hidden paper-grain">
+      {/* Header */}
+      <div className="relative z-10 px-8 pt-5 pb-3.5 border-b border-paper-200 flex items-end justify-between gap-4">
+        <div>
+          <h1
+            className="m-0 text-ink-900"
+            style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 400, letterSpacing: "0.01em" }}
+          >
+            {t("nav.achievements")}
+          </h1>
+          <p
+            className="m-0 mt-1 text-ink-500 italic"
+            style={{ fontFamily: "var(--font-serif)", fontSize: 12 }}
+          >
+            {t("achievements.subtitle", {
+              defaultValue: "{{unlocked}} / {{total}} 枚 · 这本日记本已经陪伴你 {{days}} 天",
+              unlocked: unlockedCount,
+              total: achievements.length,
+              days: totalDays,
+            })}
+          </p>
+        </div>
+        <TreeViz days={totalDays} />
       </div>
 
       {/* Badge grid by category */}
-      <div className="px-6 pb-6">
+      <div className="relative z-10 flex-1 overflow-y-auto px-8 py-5 pb-10">
         {categoryKeys.map((catKey) => {
-          const catBadges = achievements.filter(
-            (a) => BADGE_CATEGORIES[a.key] === catKey
-          );
+          const catBadges = achievements.filter((a) => BADGE_CATEGORIES[a.key] === catKey);
           if (catBadges.length === 0) return null;
+          const earned = catBadges.filter((a) => a.unlocked_at).length;
 
           return (
-            <div key={catKey} className="mb-6">
-              <h3 className="text-xs text-text-hint mb-2 uppercase tracking-wider">
-                {t(`badge.cat.${catKey}`)}
-              </h3>
-              <div className="grid grid-cols-3 gap-3">
+            <div key={catKey} className="mb-7">
+              <div className="flex items-baseline gap-2.5 mb-3">
+                <span
+                  className="text-ink-700 italic"
+                  style={{ fontFamily: "var(--font-serif)", fontSize: 15 }}
+                >
+                  {t(`badge.cat.${catKey}`)}
+                </span>
+                <div className="flex-1 h-px bg-paper-200" />
+                <span className="text-[10.5px] text-ink-400" style={{ fontFamily: "var(--font-mono)" }}>
+                  {earned}/{catBadges.length}
+                </span>
+              </div>
+              <div
+                className="grid gap-3"
+                style={{ gridTemplateColumns: "repeat(auto-fill, minmax(172px, 1fr))" }}
+              >
                 {catBadges.map((a, i) => {
                   const unlocked = !!a.unlocked_at;
                   return (
                     <motion.div
                       key={a.key}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className={`text-center p-3 rounded-xl border transition-colors
-                        ${unlocked
-                          ? "bg-warm-50 border-accent/20"
-                          : "bg-warm-50/50 border-border opacity-50"
-                        }`}
+                      transition={{ delay: i * 0.04 }}
+                      className="relative border rounded-[4px] p-4 bg-paper-0 flex flex-col items-center gap-2"
+                      style={{
+                        borderColor: unlocked ? "var(--color-paper-300)" : "var(--color-paper-200)",
+                        opacity: unlocked ? 1 : 0.55,
+                      }}
                     >
-                      <div className="mb-1">
-                        {unlocked ? (
-                          <img src={BADGE_ICONS[a.key]} alt={a.key} className="w-8 h-8 mx-auto" />
+                      {unlocked && (
+                        <div
+                          className="stamp absolute top-2 right-2"
+                          style={{
+                            color: "var(--color-sage-deep)",
+                            borderColor: "var(--color-sage-deep)",
+                            fontSize: 8,
+                          }}
+                        >
+                          earned
+                        </div>
+                      )}
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center"
+                        style={{
+                          border: unlocked
+                            ? "1.5px solid var(--color-ink-800)"
+                            : "1.5px solid var(--color-ink-400)",
+                          background: unlocked ? "var(--color-paper-100)" : "transparent",
+                        }}
+                      >
+                        {unlocked && BADGE_ICONS[a.key] ? (
+                          <img src={BADGE_ICONS[a.key]} alt={a.key} className="w-7 h-7" />
                         ) : (
-                          <div className="w-8 h-8 mx-auto rounded-full bg-warm-200/60 flex items-center justify-center">
-                            <span className="text-text-hint text-base font-bold">?</span>
-                          </div>
+                          <span className="text-ink-400 text-base font-semibold" style={{ fontFamily: "var(--font-serif)" }}>?</span>
                         )}
                       </div>
-                      <p className="text-xs font-medium text-text-primary">
+                      <div
+                        className="text-ink-900 text-center"
+                        style={{ fontFamily: "var(--font-serif)", fontSize: 13.5, fontWeight: 500 }}
+                      >
                         {unlocked ? t(`badge.${a.key}`) : "???"}
-                      </p>
-                      <p className="text-xs text-text-hint mt-0.5">
+                      </div>
+                      <div className="text-[10.5px] text-ink-500 text-center leading-[1.5]">
                         {unlocked ? t(`badge.desc.${a.key}`) : t("badge.locked")}
-                      </p>
+                      </div>
                       {unlocked && a.unlocked_at && (
-                        <p className="text-xs text-accent mt-1">
-                          {dayjs(a.unlocked_at).format(t("diary.monthDayFormat"))}
-                        </p>
+                        <div
+                          className="text-[9.5px] text-ink-400"
+                          style={{ fontFamily: "var(--font-mono)" }}
+                        >
+                          {dayjs(a.unlocked_at).format("YYYY-MM-DD")}
+                        </div>
                       )}
                     </motion.div>
                   );

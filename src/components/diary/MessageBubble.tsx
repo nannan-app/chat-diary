@@ -1,8 +1,19 @@
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import dayjs from "dayjs";
-import { FileText, ChevronDown, ChevronRight, Brain, Bot, File, FileAudio, FileVideo, Download } from "lucide-react";
+import {
+  FileText,
+  ChevronDown,
+  ChevronRight,
+  Brain,
+  Sparkles,
+  Feather,
+  File,
+  FileAudio,
+  FileVideo,
+  Download,
+} from "lucide-react";
 import type { Message } from "../../lib/types";
 import { useUIStore } from "../../stores/uiStore";
 import { SOURCE_ICONS } from "../../lib/constants";
@@ -13,12 +24,28 @@ interface Props {
   message: Message;
 }
 
+const serifStyle: React.CSSProperties = { fontFamily: "var(--font-serif)" };
+const monoStyle: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+
+function QuoteBlock({ content }: { content: string }) {
+  const shown = content.length > 60 ? content.slice(0, 60) + "…" : content;
+  return (
+    <div
+      className="text-[11px] text-ink-500 italic border-l-2 border-paper-300 pl-2 mb-1.5"
+      style={serifStyle}
+    >
+      „ {shown}
+    </div>
+  );
+}
+
 export default function MessageBubble({ message }: Props) {
   const { t } = useTranslation();
   const showContextMenu = useUIStore((s) => s.showContextMenu);
   const highlightMessageId = useUIStore((s) => s.highlightMessageId);
   const isUser = message.kind !== "ai_reply";
   const time = dayjs(message.created_at).format("YYYY-MM-DD HH:mm");
+  const timeShort = dayjs(message.created_at).format("HH:mm");
   const sourceIcon = SOURCE_ICONS[message.source] || "";
   const [highlighted, setHighlighted] = useState(false);
 
@@ -33,84 +60,100 @@ export default function MessageBubble({ message }: Props) {
     }
   }, [highlightMessageId, message.id]);
 
-  const highlightClass = highlighted ? "bg-accent/15 rounded-xl transition-colors duration-500" : "";
+  const highlightClass = highlighted ? "bg-paper-100/70 rounded-[10px] transition-colors duration-500" : "";
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     showContextMenu(e.clientX, e.clientY, message.id);
   };
 
-  // Mood card
+  // ── Mood card ──
   if (message.kind === "mood") {
+    const moodSrc = message.mood && MOOD_ICONS[message.mood];
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={`flex justify-center my-2 ${highlightClass}`}
-        data-message-id={message.id}
-      >
-        <div className="bg-warm-100 rounded-2xl px-4 py-2 text-center">
-          {message.mood && MOOD_ICONS[message.mood]
-            ? <img src={MOOD_ICONS[message.mood]} alt={message.mood} className="w-10 h-10 mx-auto" />
-            : <span className="text-2xl">{message.mood}</span>
-          }
-          <p className="text-xs text-text-hint mt-0.5">{time}</p>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // Image message
-  if (message.kind === "image" && message.thumbnail) {
-    const blob = new Blob([new Uint8Array(message.thumbnail)], {
-      type: "image/jpeg",
-    });
-    const url = URL.createObjectURL(blob);
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2 px-4 ${highlightClass}`}
+      <div
+        className={`flex justify-end my-1.5 px-6 ${highlightClass}`}
         data-message-id={message.id}
         onContextMenu={handleContextMenu}
       >
-        <div className="max-w-[200px]">
-          <img
-            src={url}
-            alt=""
-            className="rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
-            onClick={() => {
-              if (message.image_id) {
-                useUIStore.getState().setViewingImageId(message.image_id);
-              }
-            }}
-          />
-          <div className={`flex items-center gap-1 mt-0.5 ${isUser ? "justify-end" : "justify-start"}`}>
-            {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
-            <span className="text-xs text-text-hint">{time}</span>
+        <div className="bubble-pop flex items-center gap-2.5 border border-paper-300 rounded-[4px] px-4 py-2.5">
+          {moodSrc ? (
+            <img src={moodSrc} alt={message.mood || ""} className="w-[26px] h-[26px]" />
+          ) : (
+            <span className="text-2xl">{message.mood}</span>
+          )}
+          <div className="flex flex-col gap-[1px]">
+            <span
+              className="text-[10.5px] text-ink-500"
+              style={{ ...serifStyle, letterSpacing: "0.15em", textTransform: "uppercase" }}
+            >
+              mood{message.mood ? ` · ${message.mood}` : ""}
+            </span>
+            <span className="text-[10px] text-ink-400" style={monoStyle}>
+              {timeShort}
+            </span>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
-  // File message
+  // ── Image ──
+  if (message.kind === "image" && message.thumbnail) {
+    const blob = new Blob([new Uint8Array(message.thumbnail)], { type: "image/jpeg" });
+    const url = URL.createObjectURL(blob);
+
+    return (
+      <div
+        className={`flex justify-end mb-2 px-6 ${highlightClass}`}
+        data-message-id={message.id}
+        onContextMenu={handleContextMenu}
+      >
+        <div className="bubble-pop max-w-[280px]">
+          <div className="border border-user-stroke rounded-[4px] p-1.5 bg-paper-0">
+            <img
+              src={url}
+              alt=""
+              className="w-full rounded-[2px] cursor-pointer hover:opacity-95 transition-opacity"
+              onClick={() => {
+                if (message.image_id) {
+                  useUIStore.getState().setViewingImageId(message.image_id);
+                }
+              }}
+            />
+            {message.content && (
+              <div
+                className="text-[11px] text-ink-600 italic px-1 pt-1.5"
+                style={serifStyle}
+              >
+                — {message.content}
+              </div>
+            )}
+          </div>
+          <div
+            className="flex items-center gap-1 justify-end mt-1 pr-0.5 text-[10px] text-ink-400"
+            style={monoStyle}
+          >
+            {sourceIcon && <img src={sourceIcon} alt="" className="w-3 h-3 opacity-70" />}
+            <span>{time}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── File ──
   if (message.kind === "file" && message.file_id) {
     const fileName = message.file_name || message.content || t("diary.file.unknown");
     const fileMime = message.file_mime_type || "";
     const fileSize = message.file_size;
 
-    // Choose icon based on mime type
     let FileIcon = File;
     if (fileMime.startsWith("audio/")) FileIcon = FileAudio;
     else if (fileMime.startsWith("video/")) FileIcon = FileVideo;
     else if (fileMime.includes("pdf") || fileMime.includes("document") || fileMime.includes("text"))
       FileIcon = FileText;
 
-    // Format file size
     const formatSize = (bytes: number) => {
       if (bytes < 1024) return `${bytes} B`;
       if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -135,48 +178,54 @@ export default function MessageBubble({ message }: Props) {
     };
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={`flex justify-end mb-2 px-4 ${highlightClass}`}
+      <div
+        className={`flex justify-end mb-2 px-6 ${highlightClass}`}
         data-message-id={message.id}
         onContextMenu={handleContextMenu}
       >
-        <div className="max-w-[70%]">
+        <div className="bubble-pop max-w-[70%]">
           <div
             onClick={handleDownload}
-            className="bg-white rounded-2xl rounded-tr-md shadow-sm border border-border/50
-                       px-4 py-3 cursor-pointer hover:shadow-md transition-shadow min-w-[200px]
-                       flex items-center gap-3"
+            className="min-w-[220px] flex items-center gap-3 border border-user-stroke rounded-[4px] bg-paper-0 px-3.5 py-3 cursor-pointer hover:bg-paper-50 transition-colors"
           >
-            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-              <FileIcon className="w-5 h-5 text-accent" />
+            <div
+              className="w-8 h-9 border border-paper-300 rounded-[3px] flex items-center justify-center flex-shrink-0 text-ink-600"
+              style={monoStyle}
+            >
+              <FileIcon className="w-4 h-4" strokeWidth={1.6} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text-primary truncate">{fileName}</p>
-              <p className="text-xs text-text-hint mt-0.5">
+              <p
+                className="text-[13.5px] text-ink-900 truncate"
+                style={serifStyle}
+              >
+                {fileName}
+              </p>
+              <p className="text-[10.5px] text-ink-500 mt-0.5" style={monoStyle}>
                 {fileSize ? formatSize(fileSize) : ""}
               </p>
             </div>
-            <Download className="w-4 h-4 text-text-hint flex-shrink-0" />
+            <Download className="w-4 h-4 text-ink-500 flex-shrink-0" strokeWidth={1.6} />
           </div>
-          <div className="flex items-center gap-1 mt-0.5 justify-end">
-            <span className="text-xs text-text-hint">{time}</span>
-            {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
+          <div
+            className="flex items-center gap-1 justify-end mt-1 text-[10px] text-ink-400"
+            style={monoStyle}
+          >
+            {sourceIcon && <img src={sourceIcon} alt="" className="w-3 h-3 opacity-70" />}
+            <span>{time}</span>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
-  // Article card
+  // ── Article ──
   if (message.kind === "article") {
-    // Strip HTML tags for plain text preview
     const plainPreview = message.article_preview
       ? message.article_preview.replace(/<[^>]*>/g, "").trim()
       : "";
-    const previewLine = plainPreview.slice(0, 80) + (plainPreview.length > 80 ? "..." : "");
+    const previewLine = plainPreview.slice(0, 180) + (plainPreview.length > 180 ? "…" : "");
+    const wordCount = plainPreview.length;
 
     const handleArticleClick = () => {
       if (message.article_id) {
@@ -185,52 +234,64 @@ export default function MessageBubble({ message }: Props) {
     };
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={`flex justify-end mb-2 px-4 ${highlightClass}`}
+      <div
+        className={`flex justify-end mb-2 px-6 ${highlightClass}`}
         data-message-id={message.id}
         onContextMenu={handleContextMenu}
       >
-        <div className="max-w-[70%]">
+        <div className="bubble-pop max-w-[440px] w-full">
           <div
             onClick={handleArticleClick}
-            className="bg-white rounded-2xl rounded-tr-md shadow-sm border border-border/50 px-4 py-3 cursor-pointer hover:shadow-md transition-shadow min-w-[240px]"
+            className="border border-user-stroke rounded-[4px] bg-paper-0 px-4 py-3.5 cursor-pointer hover:bg-paper-50/70 transition-colors"
           >
-            <div className="flex items-start gap-2.5 mb-2">
-              <FileText className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-              <span className="text-sm font-medium text-text-primary line-clamp-2">{message.content}</span>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Feather className="w-3 h-3 text-user-ink" strokeWidth={1.8} />
+              <span
+                className="text-[10px] text-user-ink font-semibold"
+                style={{ letterSpacing: "0.15em", textTransform: "uppercase" }}
+              >
+                {t("article.longformLabel", { defaultValue: "长文" })}
+              </span>
+              <div className="flex-1 h-px bg-paper-200" />
+              {wordCount > 0 && (
+                <span className="text-[10px] text-ink-400" style={monoStyle}>
+                  {wordCount}{t("diary.words")}
+                </span>
+              )}
             </div>
+            <h3
+              className="text-[18px] text-ink-900 m-0 mb-1.5"
+              style={{ ...serifStyle, fontWeight: 500 }}
+            >
+              {message.content}
+            </h3>
             {previewLine && (
-              <p className="text-xs text-text-secondary leading-relaxed mb-2 line-clamp-2 pl-7">
+              <p
+                className="text-[12.5px] text-ink-700 m-0 leading-[1.75] line-clamp-3"
+                style={serifStyle}
+              >
                 {previewLine}
               </p>
             )}
-            <div className="flex items-center gap-1 pl-7">
-              <div className="w-full h-px bg-border/50" />
+            <div className="mt-2.5 pt-2 border-t border-dashed border-paper-300 flex items-center justify-between">
+              <span className="text-[11px] text-ink-500 italic" style={serifStyle}>
+                {t("diary.article.clickToView", { defaultValue: "点击展开全文 →" })}
+              </span>
             </div>
-            <p className="text-xs text-accent mt-1.5 pl-7">{t("diary.article.clickToView")}</p>
           </div>
-          <div className="flex items-center gap-1 mt-0.5 justify-end">
-            <span className="text-xs text-text-hint">{time}</span>
-            {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
+          <div
+            className="flex items-center gap-1 justify-end mt-1 text-[10px] text-ink-400"
+            style={monoStyle}
+          >
+            {sourceIcon && <img src={sourceIcon} alt="" className="w-3 h-3 opacity-70" />}
+            <span>{time}</span>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
-  // Quote reference
-  const quoteBlock = message.quote_content ? (
-    <div className="bg-warm-100/50 rounded-lg px-2.5 py-1.5 mb-1 border-l-2 border-accent/40">
-      <p className="text-xs text-text-secondary truncate">
-        {message.quote_content}
-      </p>
-    </div>
-  ) : null;
-
-  // Parse AI reply content (may contain thinking + text as JSON)
+  // ── AI reply with thinking support ──
   const aiContent = useMemo(() => {
     if (message.kind !== "ai_reply" || !message.content) return null;
     try {
@@ -246,33 +307,40 @@ export default function MessageBubble({ message }: Props) {
 
   const [showThinking, setShowThinking] = useState(false);
 
-  // AI reply with thinking support
-  if (aiContent) {
+  if (message.kind === "ai_reply") {
+    const text = aiContent?.text ?? message.content ?? "";
+    const thinking = aiContent?.thinking;
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={`flex justify-start mb-2 px-4 ${highlightClass}`}
+      <div
+        className={`flex justify-start mb-2 px-6 ${highlightClass}`}
         data-message-id={message.id}
         onContextMenu={handleContextMenu}
       >
-        <div className="flex gap-2 max-w-[75%]">
-        <div className="w-7 h-7 rounded-full flex-shrink-0 mt-1 bg-accent/15 flex items-center justify-center">
-            <Bot className="w-4 h-4 text-accent" />
+        <div className="bubble-pop max-w-[75%] flex flex-col items-start">
+          <div
+            className="text-[10.5px] text-ink-500 italic mb-1"
+            style={{ ...serifStyle, letterSpacing: "0.05em" }}
+          >
+            <Sparkles className="inline-block w-3 h-3 mr-1 align-[-2px]" strokeWidth={1.6} />
+            {t("app.name", { defaultValue: "喃喃" })} · AI
           </div>
-        <div className="items-start flex flex-col flex-1 min-w-0">
-          {quoteBlock}
-          <div className="bg-white text-text-primary rounded-2xl rounded-tl-md shadow-sm overflow-hidden">
-            {aiContent.thinking && (
-              <div className="border-b border-border/30">
+          {message.quote_content && <QuoteBlock content={message.quote_content} />}
+          <div className="border border-ai-stroke rounded-[4px] bg-transparent overflow-hidden text-ai-ink">
+            {thinking && (
+              <div className="border-b border-paper-200">
                 <button
                   onClick={() => setShowThinking(!showThinking)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-hint hover:text-text-secondary transition-colors w-full"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-ink-500 hover:text-ink-700 transition-colors w-full"
                 >
-                  <Brain className="w-3 h-3" />
-                  {t("diary.ai.thinking")}
-                  {showThinking ? <ChevronDown className="w-3 h-3 ml-auto" /> : <ChevronRight className="w-3 h-3 ml-auto" />}
+                  <Brain className="w-3 h-3" strokeWidth={1.6} />
+                  <span style={serifStyle} className="italic">
+                    {t("diary.ai.thinking")}
+                  </span>
+                  {showThinking ? (
+                    <ChevronDown className="w-3 h-3 ml-auto" />
+                  ) : (
+                    <ChevronRight className="w-3 h-3 ml-auto" />
+                  )}
                 </button>
                 <AnimatePresence>
                   {showThinking && (
@@ -282,64 +350,58 @@ export default function MessageBubble({ message }: Props) {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-3 pb-2 text-xs text-text-hint leading-relaxed whitespace-pre-wrap select-text max-h-40 overflow-y-auto">
-                        {aiContent.thinking}
+                      <div className="px-3 pb-2 text-[11px] text-ink-500 leading-relaxed whitespace-pre-wrap select-text max-h-40 overflow-y-auto">
+                        {thinking}
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
             )}
-            <div className="px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words select-text">
-              {aiContent.text}
+            <div
+              className="px-3.5 py-2.5 text-[13.5px] leading-[1.75] whitespace-pre-wrap break-words select-text"
+            >
+              {text}
             </div>
           </div>
-          <div className="flex items-center gap-1 mt-0.5">
-            <span className="text-xs text-text-hint">{time}</span>
-          </div>
-        </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // Text message (and default)
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2 px-4 ${highlightClass}`}
-      data-message-id={message.id}
-      onContextMenu={handleContextMenu}
-    >
-      <div className={`max-w-[70%] ${isUser ? "items-end" : "items-start"} flex ${!isUser && message.kind === "ai_reply" ? "gap-2" : "flex-col"}`}>
-        {!isUser && message.kind === "ai_reply" && (
-          <div className="w-7 h-7 rounded-full flex-shrink-0 mt-1 bg-accent/15 flex items-center justify-center">
-            <Bot className="w-4 h-4 text-accent" />
-          </div>
-        )}
-        <div className="flex flex-col">
-          {quoteBlock}
           <div
-            className={`px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words select-text
-              ${
-                isUser
-                  ? "bg-[#95ec69] text-text-primary rounded-tr-md"
-                  : "bg-white text-text-primary rounded-tl-md shadow-sm"
-              }`}
+            className="mt-1 text-[10px] text-ink-400"
+            style={monoStyle}
           >
-            {message.kind === "text" && message.content ? renderTextWithLinks(message.content) : message.content}
-          </div>
-          {message.kind === "text" && message.content && extractUrls(message.content).map((url) => (
-            <LinkPreview key={url} url={url} />
-          ))}
-          <div className={`flex items-center gap-1 mt-0.5 ${isUser ? "flex-row-reverse" : ""}`}>
-            <span className="text-xs text-text-hint">{time}</span>
-            {sourceIcon && <img src={sourceIcon} alt="" className="w-3.5 h-3.5 inline-block" />}
+            {time}
           </div>
         </div>
       </div>
-    </motion.div>
+    );
+  }
+
+  // ── Text message (default) ──
+  return (
+    <div
+      className={`flex mb-2 px-6 ${isUser ? "justify-end" : "justify-start"} ${highlightClass}`}
+      data-message-id={message.id}
+      onContextMenu={handleContextMenu}
+    >
+      <div className={`bubble-pop max-w-[70%] flex flex-col ${isUser ? "items-end" : "items-start"}`}>
+        {message.quote_content && <QuoteBlock content={message.quote_content} />}
+        <div
+          className={`border rounded-[4px] px-3.5 py-2 text-[13.5px] leading-[1.75] whitespace-pre-wrap break-words select-text
+            ${isUser ? "border-user-stroke text-user-ink" : "border-ai-stroke text-ai-ink"}`}
+        >
+          {message.kind === "text" && message.content
+            ? renderTextWithLinks(message.content)
+            : message.content}
+        </div>
+        {message.kind === "text" && message.content &&
+          extractUrls(message.content).map((url) => <LinkPreview key={url} url={url} />)}
+        <div
+          className={`mt-1 flex items-center gap-1 text-[10px] text-ink-400 ${isUser ? "flex-row-reverse" : ""}`}
+          style={monoStyle}
+        >
+          <span>{time}</span>
+          {sourceIcon && <img src={sourceIcon} alt="" className="w-3 h-3 opacity-70" />}
+        </div>
+      </div>
+    </div>
   );
 }

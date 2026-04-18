@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { CalendarDays, Images, BookOpen, Star, Medal, Dices, Settings, Lock, LockOpen, FolderOpen } from "lucide-react";
 import { useUIStore } from "../../stores/uiStore";
@@ -16,25 +15,30 @@ const navItemDefs: { id: NavSection; icon: React.FC<any>; labelKey: string }[] =
   { id: "achievements", icon: Medal, labelKey: "nav.achievements" },
 ];
 
-function NavTooltipButton({
+function RailButton({
+  active,
   label,
-  className,
   onClick,
   children,
 }: {
+  active?: boolean;
   label: string;
-  className?: string;
   onClick?: React.MouseEventHandler;
   children: React.ReactNode;
 }) {
   return (
-    <button onClick={onClick} className={`relative group ${className || ""}`}>
+    <button
+      onClick={onClick}
+      data-tooltip={label}
+      className={`relative w-9 h-9 rounded-[10px] flex items-center justify-center transition-all
+        ${active
+          ? "bg-paper-200 text-ink-900"
+          : "text-ink-500 hover:bg-paper-100 hover:text-ink-700"}`}
+    >
+      {active && (
+        <span className="absolute -left-2 top-2 bottom-2 w-[2px] rounded-full bg-ink-800" />
+      )}
       {children}
-      <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2
-                        px-2 py-1 rounded-md bg-text-primary text-white text-xs whitespace-nowrap
-                        opacity-0 group-hover:opacity-100 transition-opacity z-50">
-        {label}
-      </span>
     </button>
   );
 }
@@ -44,75 +48,86 @@ export default function IconNavBar() {
   const activeNav = useUIStore((s) => s.activeNav);
   const setActiveNav = useUIStore((s) => s.setActiveNav);
   const { spaceType, logout } = useAuthStore();
-  const navItems = navItemDefs.map(n => ({ ...n, label: t(n.labelKey) }));
 
   return (
-    <div className="w-14 bg-nav-bg flex flex-col items-center pt-4 pb-3 border-r border-border">
-      {/* Nav items */}
-      <div className="flex flex-col gap-1 flex-1">
-        {navItems.map((item) => (
-          <NavTooltipButton
-            key={item.id}
-            label={item.label}
-            onClick={() => setActiveNav(item.id)}
-            className="w-10 h-10 rounded-xl flex items-center justify-center
-                       text-lg hover:bg-warm-200/50 transition-colors"
-          >
-            {activeNav === item.id && (
-              <motion.div
-                layoutId="nav-indicator"
-                className="absolute inset-0 bg-accent/10 rounded-xl"
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              />
-            )}
-            <item.icon className="relative z-10 w-5 h-5" />
-          </NavTooltipButton>
-        ))}
+    <div className="relative w-[52px] bg-paper-50 border-r border-paper-200 flex flex-col items-center pt-[10px] pb-[10px] flex-shrink-0 paper-grain">
+      {/* Vertical wordmark */}
+      <div
+        className="text-ink-700 mb-[10px] pt-0.5 relative z-10"
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: 18,
+          fontWeight: 500,
+          writingMode: "vertical-rl",
+          letterSpacing: "0.3em",
+        }}
+      >
+        {t("app.name")}
+      </div>
+      <div className="w-5 h-px bg-paper-300 mb-3 relative z-10" />
 
-        {/* Random memory dice */}
-        <NavTooltipButton
-          label={t("nav.random")}
-          className="w-10 h-10 rounded-xl flex items-center justify-center
-                     text-lg hover:bg-warm-200/50 transition-colors mt-2"
-          onClick={async () => {
-            try {
-              const day = await ipc.getRandomDiaryDay();
-              if (day) {
-                useDiaryStore.getState().setSelectedDate(day.date);
-                setActiveNav("diary");
-                // Track for achievement
-                await ipc.setSetting("used_random_memory", "true");
+      {/* Nav items */}
+      <div className="flex flex-col gap-0.5 flex-1 items-center relative z-10">
+        {navItemDefs.map((item) => {
+          const Ico = item.icon;
+          return (
+            <RailButton
+              key={item.id}
+              active={activeNav === item.id}
+              label={t(item.labelKey)}
+              onClick={() => setActiveNav(item.id)}
+            >
+              <Ico className="w-[18px] h-[18px]" strokeWidth={1.6} />
+            </RailButton>
+          );
+        })}
+
+        {/* Random memory */}
+        <div className="mt-1">
+          <RailButton
+            label={t("nav.random")}
+            onClick={async () => {
+              try {
+                const day = await ipc.getRandomDiaryDay();
+                if (day) {
+                  useDiaryStore.getState().setSelectedDate(day.date);
+                  setActiveNav("diary");
+                  await ipc.setSetting("used_random_memory", "true");
+                }
+              } catch {
+                /* empty */
               }
-            } catch (e) {
-              console.log("No random memory available");
-            }
-          }}
-        >
-          <Dices className="w-5 h-5" />
-        </NavTooltipButton>
+            }}
+          >
+            <Dices className="w-[18px] h-[18px]" strokeWidth={1.6} />
+          </RailButton>
+        </div>
       </div>
 
-      {/* Space indicator — click to lock */}
-      <NavTooltipButton
-        label={spaceType === "private" ? t("space.private") : t("space.public")}
-        onClick={logout}
-        className="w-10 h-10 rounded-xl flex items-center justify-center
-                   hover:bg-warm-200/50 transition-colors mb-1"
-      >
-        {spaceType === "private"
-          ? <Lock className="w-4 h-4 text-accent" />
-          : <LockOpen className="w-4 h-4 text-orange-400" />}
-      </NavTooltipButton>
+      {/* Private/public space */}
+      <div className="relative z-10 mb-1">
+        <button
+          onClick={logout}
+          data-tooltip={spaceType === "private" ? t("space.private") : t("space.public")}
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-colors hover:bg-paper-100"
+        >
+          {spaceType === "private" ? (
+            <Lock className="w-4 h-4" strokeWidth={1.6} style={{ color: "var(--color-sage-deep)" }} />
+          ) : (
+            <LockOpen className="w-4 h-4 text-[#c9ad8a]" strokeWidth={1.6} />
+          )}
+        </button>
+      </div>
 
-      {/* Settings at bottom */}
-      <NavTooltipButton
-        label={t("nav.settings")}
-        onClick={() => useUIStore.getState().setShowSettings(true)}
-        className="w-10 h-10 rounded-xl flex items-center justify-center
-                   text-lg hover:bg-warm-200/50 transition-colors"
-      >
-        <Settings className="w-5 h-5" />
-      </NavTooltipButton>
+      {/* Settings */}
+      <div className="relative z-10">
+        <RailButton
+          label={t("nav.settings")}
+          onClick={() => useUIStore.getState().setShowSettings(true)}
+        >
+          <Settings className="w-4 h-4" strokeWidth={1.6} />
+        </RailButton>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, SmilePlus, Bot, Tag, PenLine, Paperclip } from "lucide-react";
+import { Camera, SmilePlus, Bot, Tag, PenLine, Paperclip, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -235,19 +235,29 @@ export default function MessageInput() {
     // TODO: handle image drop from desktop
   };
 
+  const toolbarBtn = (active: boolean, disabled = false) =>
+    `p-1.5 rounded-md transition-colors ${
+      disabled
+        ? "opacity-40 cursor-not-allowed"
+        : active
+          ? "bg-paper-200 text-ink-900"
+          : "text-ink-600 hover:bg-paper-100 hover:text-ink-800"
+    }`;
+
   return (
     <div
-      className="border-t border-border bg-input-bg"
+      className="relative border-t border-paper-200 bg-paper-0 paper-grain"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       {/* Resize handle */}
       <div
         onMouseDown={handleResizeStart}
-        className="h-1.5 cursor-ns-resize flex items-center justify-center hover:bg-warm-100 transition-colors group mb-[-8px]"
+        className="relative z-10 h-1.5 cursor-ns-resize flex items-center justify-center hover:bg-paper-100 transition-colors group mb-[-8px]"
       >
-        <div className="w-8 h-0.5 rounded-full bg-border group-hover:bg-text-hint transition-colors" />
+        <div className="w-8 h-0.5 rounded-full bg-paper-300 group-hover:bg-ink-400 transition-colors" />
       </div>
+
       {/* Quote preview */}
       <AnimatePresence>
         {quoteMessage && (
@@ -255,15 +265,18 @@ export default function MessageInput() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="px-4 pt-2"
+            className="relative z-10 px-4 pt-2"
           >
-            <div className="flex items-center gap-2 bg-warm-100 rounded-lg px-3 py-1.5">
-              <div className="flex-1 text-xs text-text-secondary truncate border-l-2 border-accent/40 pl-2">
+            <div className="flex items-center gap-2 bg-paper-100 rounded-md px-3 py-1.5">
+              <div
+                className="flex-1 text-xs text-ink-600 truncate border-l-2 border-paper-300 pl-2 italic"
+                style={{ fontFamily: "var(--font-serif)" }}
+              >
                 {quoteMessage.content}
               </div>
               <button
                 onClick={() => setQuoteMessage(null)}
-                className="text-text-hint hover:text-text-secondary text-sm"
+                className="text-ink-400 hover:text-ink-600 text-sm"
               >
                 ✕
               </button>
@@ -279,16 +292,21 @@ export default function MessageInput() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="px-4 pt-2"
+            className="relative z-10 px-4 pt-2"
           >
-            <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-1.5">
-              <span className="text-xs text-accent">{t("diary.editing")}</span>
+            <div className="flex items-center gap-2 bg-paper-100 rounded-md px-3 py-1.5">
+              <span
+                className="text-xs text-user-ink italic"
+                style={{ fontFamily: "var(--font-serif)" }}
+              >
+                {t("diary.editing")}
+              </span>
               <button
                 onClick={() => {
                   setEditingMessage(null);
                   setText("");
                 }}
-                className="text-text-hint hover:text-text-secondary text-sm ml-auto"
+                className="text-ink-400 hover:text-ink-600 text-sm ml-auto"
               >
                 {t("common.cancel")}
               </button>
@@ -298,56 +316,58 @@ export default function MessageInput() {
       </AnimatePresence>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-1 px-3 pt-2">
+      <div className="relative z-10 flex items-center gap-0.5 px-3.5 pt-2">
         <button
           onClick={handleImageUpload}
-          className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title={t("toolbar.image")}
+          className={toolbarBtn(false)}
+          data-tooltip={t("toolbar.image")}
         >
-          <Camera className="w-4 h-4" />
+          <Camera className="w-[15px] h-[15px]" strokeWidth={1.6} />
         </button>
         <button
           onClick={handleFileUpload}
-          className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title={t("toolbar.file")}
+          className={toolbarBtn(false)}
+          data-tooltip={t("toolbar.file")}
         >
-          <Paperclip className="w-4 h-4" />
+          <Paperclip className="w-[15px] h-[15px]" strokeWidth={1.6} />
         </button>
         <button
           onClick={() => setShowMoodPanel(!showMoodPanel)}
-          className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title={t("toolbar.mood")}
+          className={toolbarBtn(showMoodPanel)}
+          data-tooltip={t("toolbar.mood")}
         >
-          <SmilePlus className="w-4 h-4" />
+          <SmilePlus className="w-[15px] h-[15px]" strokeWidth={1.6} />
         </button>
         <button
           onClick={handleAiSummarize}
           disabled={!aiConfigured || aiLoading}
-          className={`p-1.5 rounded-lg transition-colors text-sm ${
-            aiLoading ? "animate-pulse text-accent" :
-            aiConfigured ? "hover:bg-warm-100" : "opacity-40 cursor-not-allowed"
-          }`}
-          title={aiLoading ? t("toolbar.aiLoading") : aiConfigured ? t("toolbar.ai") : t("toolbar.aiNotConfigured")}
+          className={`${toolbarBtn(false, !aiConfigured || aiLoading)} ${aiLoading ? "animate-pulse text-user-ink" : ""}`}
+          data-tooltip={aiLoading ? t("toolbar.aiLoading") : aiConfigured ? t("toolbar.ai") : t("toolbar.aiNotConfigured")}
         >
-          <Bot className="w-4 h-4" />
+          <Bot className="w-[15px] h-[15px]" strokeWidth={1.6} />
         </button>
         <button
           onClick={() => { setShowTagPanel(!showTagPanel); setShowMoodPanel(false); }}
-          className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title={t("toolbar.tag")}
+          className={toolbarBtn(showTagPanel)}
+          data-tooltip={t("toolbar.tag")}
         >
-          <Tag className="w-4 h-4" />
+          <Tag className="w-[15px] h-[15px]" strokeWidth={1.6} />
         </button>
         <button
           onClick={() => setShowEditor(true)}
-          className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors text-sm"
-          title={t("toolbar.article")}
+          className={toolbarBtn(false)}
+          data-tooltip={t("toolbar.article")}
         >
-          <PenLine className="w-4 h-4" />
+          <PenLine className="w-[15px] h-[15px]" strokeWidth={1.6} />
         </button>
 
         <div className="flex-1" />
-        <span className="text-xs text-text-hint">{wordCount} {t("diary.words")}</span>
+        <span
+          className="text-[10.5px] text-ink-400"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          {wordCount} {t("diary.words")}
+        </span>
       </div>
 
       {/* Mood panel */}
@@ -357,22 +377,22 @@ export default function MessageInput() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="px-3 py-2"
+            className="relative z-10 px-3.5 py-2.5 border-b border-paper-200"
           >
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {getMoods().map((m) => (
                 <motion.button
                   key={m.emoji}
-                  whileHover={{ scale: 1.15 }}
+                  whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleMood(m.emoji)}
-                  className="flex flex-col items-center gap-0.5 p-1.5 rounded-lg hover:bg-warm-100 transition-colors"
+                  className="flex flex-col items-center gap-1 p-1 rounded-md hover:bg-paper-100 transition-colors"
                 >
                   {MOOD_ICONS[m.emoji]
-                    ? <img src={MOOD_ICONS[m.emoji]} alt={m.label} className="w-8 h-8" />
+                    ? <img src={MOOD_ICONS[m.emoji]} alt={m.label} className="w-[26px] h-[26px]" />
                     : <span className="text-xl">{m.emoji}</span>
                   }
-                  <span className="text-xs text-text-hint">{m.label}</span>
+                  <span className="text-[10px] text-ink-500">{m.label}</span>
                 </motion.button>
               ))}
             </div>
@@ -387,9 +407,9 @@ export default function MessageInput() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="px-3 py-1.5"
+            className="relative z-10 px-3 py-1.5"
           >
-            <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2">
+            <div className="border border-[#c9a0a0] text-[#a66060] text-xs rounded-md px-3 py-2 bg-[#c9a0a0]/10">
               {uploadError}
             </div>
           </motion.div>
@@ -399,9 +419,9 @@ export default function MessageInput() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="px-3 py-1.5"
+            className="relative z-10 px-3 py-1.5"
           >
-            <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2 select-all cursor-text">
+            <div className="border border-[#c9a0a0] text-[#a66060] text-xs rounded-md px-3 py-2 bg-[#c9a0a0]/10 select-all cursor-text">
               {t("toolbar.aiError")}: {aiError}
             </div>
           </motion.div>
@@ -411,10 +431,10 @@ export default function MessageInput() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="px-3 py-1.5"
+            className="relative z-10 px-3 py-1.5"
           >
-            <div className="bg-accent/10 border border-accent/20 text-accent text-xs rounded-lg px-3 py-2 flex items-center gap-2">
-              <span className="inline-block w-3 h-3 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+            <div className="border border-paper-300 text-user-ink text-xs rounded-md px-3 py-2 bg-paper-100 flex items-center gap-2 italic" style={{ fontFamily: "var(--font-serif)" }}>
+              <span className="inline-block w-3 h-3 border-2 border-paper-300 border-t-user-ink rounded-full animate-spin" />
               {t("toolbar.aiLoading")}
             </div>
           </motion.div>
@@ -425,10 +445,11 @@ export default function MessageInput() {
       <TagPanel visible={showTagPanel} onClose={() => setShowTagPanel(false)} />
 
       {/* Input area */}
-      <div className="px-3 pb-3 pt-1">
+      <div className="relative z-10 px-3.5 pb-3 pt-1.5">
         <div
-          className={`flex items-end gap-2 bg-white rounded-xl border border-border px-3 py-2
-                      transition-all duration-300 ${isTyping ? "input-breathing" : ""}`}
+          className={`flex items-end gap-2 bg-paper-0 rounded-[10px] border px-3 py-2.5 transition-all duration-300 ${
+            isTyping ? "input-breathing" : "border-paper-200"
+          }`}
         >
           <textarea
             ref={textareaRef}
@@ -439,19 +460,32 @@ export default function MessageInput() {
             }}
             onKeyDown={handleKeyDown}
             placeholder={t("diary.input.placeholder")}
-            className="flex-1 resize-none bg-transparent text-sm text-text-primary
-                       placeholder:text-text-hint focus:outline-none leading-relaxed
-                       overflow-y-auto"
+            className="flex-1 resize-none bg-transparent text-[13.5px] text-ink-900 placeholder:text-ink-400 focus:outline-none leading-relaxed overflow-y-auto"
             style={{ height: `${inputHeight}px` }}
           />
           <button
             onClick={handleSend}
             disabled={!text.trim()}
-            className="text-accent disabled:text-text-hint transition-colors text-sm
-                       hover:text-accent-hover"
+            className={`flex items-center justify-center w-[30px] h-[30px] rounded-[8px] transition-colors flex-shrink-0
+              ${text.trim() ? "bg-ink-800 text-paper-0 hover:bg-ink-900" : "bg-paper-200 text-ink-400 cursor-not-allowed"}`}
+            data-tooltip={t("diary.input.send")}
           >
-            {t("diary.input.send")}
+            <Send className="w-[14px] h-[14px]" strokeWidth={1.6} />
           </button>
+        </div>
+        <div className="flex justify-between mt-1 px-0.5">
+          <span
+            className="text-[10px] text-ink-400 italic"
+            style={{ fontFamily: "var(--font-serif)" }}
+          >
+            {t("diary.input.hint", { defaultValue: "回车发送 · Shift + 回车 换行" })}
+          </span>
+          <span
+            className="text-[10px] text-ink-400"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            {text.length}/∞
+          </span>
         </div>
       </div>
 
@@ -462,7 +496,6 @@ export default function MessageInput() {
             const currentDay = useDiaryStore.getState().currentDay;
             if (currentDay) {
               const msg = await ipc.createArticle(currentDay.id, title, content);
-              // Add article_preview for immediate display (before page reload)
               msg.article_preview = content.slice(0, 200);
               useDiaryStore.setState((s) => ({ messages: [...s.messages, msg] }));
             }
